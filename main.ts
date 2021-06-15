@@ -10,10 +10,12 @@ const url = `ws://localhost:21414/all?verifyKey=${verifyKey}&qq=${botid}`;
 
 import { RSSPlugin } from "./modules/rss.ts";
 import { PongPlugin } from './modules/pong.ts';
+import { NotePlugin } from './modules/note.ts';
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
   PongPlugin,
+  NotePlugin,
 ];
 
 function escapeMessage(arr: any[]) {
