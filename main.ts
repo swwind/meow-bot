@@ -1,4 +1,4 @@
-import { IHelper, IPlugin } from "./types.ts";
+import { IHelper, IPlugin, DeserializedMessage, IMessageChain } from "./types.ts";
 
 const botid = 2531895613;
 
@@ -8,23 +8,15 @@ const verifyKey = decoder.decode(data);
 
 const url = `ws://localhost:21414/all?verifyKey=${verifyKey}&qq=${botid}`;
 
-import { RSSPlugin } from "./modules/rss.ts";
-import { PongPlugin } from './modules/pong.ts';
-import { NotePlugin } from './modules/note.ts';
+import { RSSPlugin } from "./plugins/rss.ts";
+import { PongPlugin } from './plugins/pong.ts';
+import { NotePlugin } from './plugins/note.ts';
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
   PongPlugin,
   NotePlugin,
 ];
-
-function escapeMessage(arr: any[]) {
-  return arr.map((a) => {
-    if (a.type === "Plain") return a.text;
-    if (a.type === "At") return "@" + (a.display || a.target) + " ";
-    return "";
-  }).join("");
-}
 
 const ws = new WebSocket(url);
 ws.onopen = () => {
@@ -35,27 +27,75 @@ ws.onclose = () => {
   console.log("offline!");
 };
 
+let globalSyncId = 114514;
+let callbacks = new Map<String, Function>();
+function makeRequest(command: String, subCommand: String | null, content: any, callback: (code: number, data: any) => void) {
+  const syncId = String(++ globalSyncId);
+  ws.send(JSON.stringify({
+    syncId,
+    command,
+    subCommand,
+    content,
+  }));
+  callbacks.set(syncId, callback);
+}
+function requestMessageChain(messageId: number) {
+  return new Promise<IMessageChain>((resolve, reject) => {
+    makeRequest('messageFromId', null, {
+      id: messageId,
+    }, (code, data) => {
+      if (code) reject();
+      else resolve(data.messageChain);
+    });
+  });
+}
+
+async function deserializeMessageChain(messageChain: IMessageChain): Promise<DeserializedMessage> {
+  let quote: IMessageChain | null = null;
+  for (const message of messageChain) {
+    if (message.type === 'Quote') {
+      try {
+        quote = await requestMessageChain(message.id);
+      } catch (e) {
+        quote = null;
+      }
+    }
+  }
+  return {
+    messageChain,
+    text: messageChain.map((message) => {
+      if (message.type === 'At') return '@' + (message.display || message.target);
+      if (message.type === 'Plain') return message.text;
+      if (message.type === 'Image') return '[图片]';
+      if (message.type === 'Face') return '/' + message.name;
+      if (message.type === 'Source') return '';
+      if (message.type === 'Quote') return '';
+      return '';
+    }).join(''),
+    quote,
+  }
+}
+
 function sendMessage(command: String, subCommand: String | null, content: any) {
   ws.send(JSON.stringify({
-    syncId: -1,
+    syncId: '-1',
     command,
     subCommand,
     content,
   }));
 }
-
-function sendGroupMessage(group: number, text: string) {
+function sendGroupMessage(group: number, text: string | IMessageChain) {
   sendMessage("sendGroupMessage", null, {
     target: group,
-    messageChain: [
+    messageChain: Array.isArray(text) ? text.filter(({ type }) => type != 'Source') : [
       { type: "Plain", text },
     ],
   });
 }
-function sendFriendMessage(uid: number, text: string) {
+function sendFriendMessage(uid: number, text: string | IMessageChain) {
   sendMessage("sendFriendMessage", null, {
     target: uid,
-    messageChain: [
+    messageChain: Array.isArray(text) ? text.filter(({ type }) => type != 'Source') : [
       { type: "Plain", text },
     ],
   });
@@ -66,31 +106,39 @@ const helper: IHelper = {
   sendFriendMessage,
 };
 
-function emitGroupMessage(gid: number, uid: number, message: string) {
+function emitGroupMessage(gid: number, uid: number, message: DeserializedMessage) {
   pluginList.forEach((plugin) => {
     plugin.onGroupMessage(helper, gid, uid, message);
   });
 }
 
-function emitFriendMessage(uid: number, message: string) {
+function emitFriendMessage(uid: number, message: DeserializedMessage) {
   pluginList.forEach((plugin) => {
     plugin.onFriendMessage(helper, uid, message);
   });
 }
 
-ws.onmessage = (e) => {
+ws.onmessage = async (e) => {
   const data = JSON.parse(e.data);
-  if (data.data.type === "GroupMessage") {
+  if (data.syncId && callbacks.has(data.syncId)) {
+    const callback = callbacks.get(data.syncId);
+    if (callback) {
+      callback(data.data.code, data.data.data);
+      callbacks.delete(data.syncId);
+    }
+    return;
+  }
+  if (data.data?.type === "GroupMessage") {
     emitGroupMessage(
       data.data.sender.group.id,
       data.data.sender.id,
-      escapeMessage(data.data.messageChain),
+      await deserializeMessageChain(data.data.messageChain),
     );
   }
-  if (data.data.type === "FriendMessage") {
+  if (data.data?.type === "FriendMessage") {
     emitFriendMessage(
       data.data.sender.id,
-      escapeMessage(data.data.messageChain),
+      await deserializeMessageChain(data.data.messageChain),
     );
   }
 };
