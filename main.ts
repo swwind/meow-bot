@@ -1,4 +1,9 @@
-import { IHelper, IPlugin, DeserializedMessage, IMessageChain } from "./types.ts";
+import {
+  DeserializedMessage,
+  IHelper,
+  IMessageChain,
+  IPlugin,
+} from "./types.ts";
 
 const botid = 2531895613;
 
@@ -9,13 +14,17 @@ const verifyKey = decoder.decode(data);
 const url = `ws://localhost:21414/all?verifyKey=${verifyKey}&qq=${botid}`;
 
 import { RSSPlugin } from "./plugins/rss.ts";
-import { PongPlugin } from './plugins/pong.ts';
-import { NotePlugin } from './plugins/note.ts';
+import { PongPlugin } from "./plugins/pong.ts";
+import { NotePlugin } from "./plugins/note.ts";
+import { ChouKaPlugin } from "./plugins/chouka.ts";
+import { HashPlugin } from "./plugins/hash.ts";
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
   PongPlugin,
   NotePlugin,
+  ChouKaPlugin,
+  HashPlugin,
 ];
 
 const ws = new WebSocket(url);
@@ -29,8 +38,13 @@ ws.onclose = () => {
 
 let globalSyncId = 114514;
 let callbacks = new Map<String, Function>();
-function makeRequest(command: String, subCommand: String | null, content: any, callback: (code: number, data: any) => void) {
-  const syncId = String(++ globalSyncId);
+function makeRequest(
+  command: String,
+  subCommand: String | null,
+  content: any,
+  callback: (code: number, data: any) => void,
+) {
+  const syncId = String(++globalSyncId);
   ws.send(JSON.stringify({
     syncId,
     command,
@@ -41,7 +55,7 @@ function makeRequest(command: String, subCommand: String | null, content: any, c
 }
 function requestMessageChain(messageId: number) {
   return new Promise<IMessageChain>((resolve, reject) => {
-    makeRequest('messageFromId', null, {
+    makeRequest("messageFromId", null, {
       id: messageId,
     }, (code, data) => {
       if (code) reject();
@@ -50,10 +64,12 @@ function requestMessageChain(messageId: number) {
   });
 }
 
-async function deserializeMessageChain(messageChain: IMessageChain): Promise<DeserializedMessage> {
+async function deserializeMessageChain(
+  messageChain: IMessageChain,
+): Promise<DeserializedMessage> {
   let quote: IMessageChain | null = null;
   for (const message of messageChain) {
-    if (message.type === 'Quote') {
+    if (message.type === "Quote") {
       try {
         quote = await requestMessageChain(message.id);
       } catch (e) {
@@ -63,22 +79,13 @@ async function deserializeMessageChain(messageChain: IMessageChain): Promise<Des
   }
   return {
     messageChain,
-    text: messageChain.map((message) => {
-      if (message.type === 'At') return '@' + (message.display || message.target);
-      if (message.type === 'Plain') return message.text;
-      if (message.type === 'Image') return '[图片]';
-      if (message.type === 'Face') return '/' + message.name;
-      if (message.type === 'Source') return '';
-      if (message.type === 'Quote') return '';
-      return '';
-    }).join(''),
     quote,
-  }
+  };
 }
 
 function sendMessage(command: String, subCommand: String | null, content: any) {
   ws.send(JSON.stringify({
-    syncId: '-1',
+    syncId: "-1",
     command,
     subCommand,
     content,
@@ -87,17 +94,21 @@ function sendMessage(command: String, subCommand: String | null, content: any) {
 function sendGroupMessage(group: number, text: string | IMessageChain) {
   sendMessage("sendGroupMessage", null, {
     target: group,
-    messageChain: Array.isArray(text) ? text.filter(({ type }) => type != 'Source') : [
-      { type: "Plain", text },
-    ],
+    messageChain: Array.isArray(text)
+      ? text.filter(({ type }) => type != "Source")
+      : [
+        { type: "Plain", text },
+      ],
   });
 }
 function sendFriendMessage(uid: number, text: string | IMessageChain) {
   sendMessage("sendFriendMessage", null, {
     target: uid,
-    messageChain: Array.isArray(text) ? text.filter(({ type }) => type != 'Source') : [
-      { type: "Plain", text },
-    ],
+    messageChain: Array.isArray(text)
+      ? text.filter(({ type }) => type != "Source")
+      : [
+        { type: "Plain", text },
+      ],
   });
 }
 
@@ -106,7 +117,11 @@ const helper: IHelper = {
   sendFriendMessage,
 };
 
-function emitGroupMessage(gid: number, uid: number, message: DeserializedMessage) {
+function emitGroupMessage(
+  gid: number,
+  uid: number,
+  message: DeserializedMessage,
+) {
   pluginList.forEach((plugin) => {
     plugin.onGroupMessage(helper, gid, uid, message);
   });

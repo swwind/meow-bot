@@ -1,97 +1,91 @@
-import { IHelper, IPlugin, DeserializedMessage, IMessageChain } from "../types.ts";
+import {
+  DeserializedMessage,
+  IHelper,
+  IMessageChain,
+  IPlugin,
+} from "../types.ts";
 
-const filename = 'data/notes';
-let map: Map<string, IMessageChain>;
+import { messageText, Storage } from "../utils.ts";
+
+const storage = new Storage<string, IMessageChain>("note");
+
 const helpText = `/note set xxx (quote)
 /note append xxx (quote)
 /note delete xxx
 /note help
 /note list`;
 
-function read() {
-  try {
-    const data = Deno.readTextFileSync(filename);
-    map = new Map(JSON.parse(data));
-  } catch (e) {
-    map = new Map();
-  }
-}
-
-function write() {
-  if (map) {
-    Deno.writeTextFile(filename, JSON.stringify(Array.from(map)));
-  }
-}
-
 export const NotePlugin: IPlugin = {
   initialize(ws: IHelper) {
-    read();
   },
-  onGroupMessage(ws: IHelper, gid: number, uid: number, message: DeserializedMessage) {
-    const list = message.text.split(' ').filter(a => !!a);
-    if (list[0] === '/note') {
-      if (list.length < 2 || list[1] === 'help') {
+  onGroupMessage(
+    ws: IHelper,
+    gid: number,
+    uid: number,
+    message: DeserializedMessage,
+  ) {
+    const text = messageText(message.messageChain);
+    const list = text.split(" ").filter((a) => !!a);
+    if (list[0] === "/note") {
+      if (list.length < 2 || list[1] === "help") {
         ws.sendGroupMessage(gid, helpText);
         return;
       }
-      if (list[1] === 'set') {
+      if (list[1] === "set") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, '参数错误');
+          ws.sendGroupMessage(gid, "参数错误");
           return;
         }
         if (!message.quote) {
-          ws.sendGroupMessage(gid, '请回复需要写入的内容');
+          ws.sendGroupMessage(gid, "请回复需要写入的内容");
           return;
         }
-        map.set(`${gid}.${list[2]}`, message.quote);
-        ws.sendGroupMessage(gid, '添加成功');
-        write();
+        storage.set(`${gid}.${list[2]}`, message.quote);
+        ws.sendGroupMessage(gid, "添加成功");
         return;
       }
-      if (list[1] === 'append') {
+      if (list[1] === "append") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, '参数错误');
+          ws.sendGroupMessage(gid, "参数错误");
           return;
         }
         if (!message.quote) {
-          ws.sendGroupMessage(gid, '请回复需要写入的内容');
+          ws.sendGroupMessage(gid, "请回复需要写入的内容");
           return;
         }
-        const last = map.get(`${gid}.${list[2]}`) ?? [];
-        map.set(`${gid}.${list[2]}`, last.concat(message.quote));
-        ws.sendGroupMessage(gid, '更新成功');
-        write();
+        const last = storage.get(`${gid}.${list[2]}`) ?? [];
+        storage.set(`${gid}.${list[2]}`, last.concat(message.quote));
+        ws.sendGroupMessage(gid, "更新成功");
         return;
       }
-      if (list[1] === 'get') {
+      if (list[1] === "get") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, '参数错误');
+          ws.sendGroupMessage(gid, "参数错误");
           return;
         }
-        const note = map.get(`${gid}.${list[2]}`);
-        if (typeof note === 'string') {
+        const note = storage.get(`${gid}.${list[2]}`);
+        if (typeof note === "string") {
           ws.sendGroupMessage(gid, note);
         } else {
-          ws.sendGroupMessage(gid, `找不到 ${list[2]}`)
+          ws.sendGroupMessage(gid, `找不到 ${list[2]}`);
         }
         return;
       }
-      if (list[1] === 'delete') {
+      if (list[1] === "delete") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, '参数错误');
+          ws.sendGroupMessage(gid, "参数错误");
           return;
         }
-        const success = map.delete(`${gid}.${list[2]}`);
-        ws.sendGroupMessage(gid, success ? '删除成功' : '删除失败');
-        write();
+        const success = storage.delete(`${gid}.${list[2]}`);
+        ws.sendGroupMessage(gid, success ? "删除成功" : "删除失败");
         return;
       }
-      if (list[1] === 'list') {
+      if (list[1] === "list") {
         const header = `${gid}.`;
-        const data = Array.from(map.keys()).map((key) => {
-          return key.startsWith(header) ? key.slice(header.length) : '';
-        }).filter(a => !!a);
-        const message = data.length ? data.join('\n') : '没有 note';
+        const data = storage.keys().map((key) => {
+          return key.startsWith(header) ? key.slice(header.length) : "";
+        }).filter((a) => !!a);
+        const message = data.length ? data.join("\n") : "没有 note";
         ws.sendGroupMessage(gid, message);
         return;
       }
@@ -99,10 +93,14 @@ export const NotePlugin: IPlugin = {
       return;
     }
 
-    const note = map.get(`${gid}.${message.text}`);
+    const note = storage.get(`${gid}.${text}`);
     if (note) {
       ws.sendGroupMessage(gid, note);
       return;
+    }
+
+    if (text === "/help") {
+      ws.sendGroupMessage(gid, "/note help");
     }
   },
   onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage) {
