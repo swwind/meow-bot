@@ -1,6 +1,6 @@
 import {
   DeserializedMessage,
-  IHelper,
+  IHelperReply,
   IMessageChain,
   IPlugin,
 } from "./types.ts";
@@ -54,6 +54,12 @@ function makeRequest(
     content,
   }));
   callbacks.set(syncId, callback);
+  setTimeout(() => {
+    if (callbacks.has(syncId)) {
+      callback(5, undefined);
+      callbacks.delete(syncId);
+    }
+  }, 2000);
 }
 function requestMessageChain(messageId: number) {
   return new Promise<IMessageChain>((resolve, reject) => {
@@ -75,7 +81,7 @@ async function deserializeMessageChain(
       try {
         quote = await requestMessageChain(message.id);
       } catch (e) {
-        quote = null;
+        quote = message.origin;
       }
     }
   }
@@ -120,10 +126,12 @@ function emitGroupMessage(
   message: DeserializedMessage,
 ) {
   pluginList.forEach((plugin) => {
-    const helper = {
+    const helper: IHelperReply = {
       sendFriendMessage,
       sendGroupMessage,
-      reply: sendGroupMessage.bind(null, gid),
+      reply(text) {
+        sendGroupMessage(gid, text);
+      },
     };
     plugin.onGroupMessage && plugin.onGroupMessage(helper, gid, uid, message);
     plugin.onAllMessage && plugin.onAllMessage(helper, gid, uid, message);
@@ -132,10 +140,13 @@ function emitGroupMessage(
 
 function emitFriendMessage(uid: number, message: DeserializedMessage) {
   pluginList.forEach((plugin) => {
-    const helper = {
+    const helper: IHelperReply = {
       sendFriendMessage,
       sendGroupMessage,
-      reply: sendFriendMessage.bind(null, uid),
+      reply(text) {
+        console.log(text);
+        sendFriendMessage(uid, text);
+      },
     };
     plugin.onFriendMessage && plugin.onFriendMessage(helper, uid, message);
     plugin.onAllMessage && plugin.onAllMessage(helper, 0, uid, message);
