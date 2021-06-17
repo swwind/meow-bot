@@ -42,14 +42,20 @@ export interface DeserializedMessage {
 }
 
 export interface IPlugin {
-  initialize(ws: IHelper): void;
-  onGroupMessage(
+  name: string;
+  helpText: string;
+  initialize?(ws: IHelper): void;
+  onGroupMessage?(
     ws: IHelper,
     gid: number,
     uid: number,
     message: DeserializedMessage,
   ): void;
-  onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage): void;
+  onFriendMessage?(
+    ws: IHelper,
+    uid: number,
+    message: DeserializedMessage,
+  ): void;
 }
 
 export interface IHelper {

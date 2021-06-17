@@ -9,19 +9,19 @@ import { messageText, Storage } from "../utils.ts";
 
 const storage = new Storage<string, IMessageChain>("note");
 
-const helpText = `/note set xxx (quote)
-/note append xxx (quote)
+const helpText = `/note set xxx (回复)
+/note append xxx (回复)
 /note delete xxx
 /note help
 /note list`;
 
 export const NotePlugin: IPlugin = {
-  initialize(ws: IHelper) {
-  },
+  name: "note",
+  helpText,
   onGroupMessage(
     ws: IHelper,
     gid: number,
-    uid: number,
+    _uid: number,
     message: DeserializedMessage,
   ) {
     const text = messageText(message.messageChain);
@@ -98,11 +98,5 @@ export const NotePlugin: IPlugin = {
       ws.sendGroupMessage(gid, note);
       return;
     }
-
-    if (text === "/help") {
-      ws.sendGroupMessage(gid, "/note help");
-    }
-  },
-  onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage) {
   },
 };

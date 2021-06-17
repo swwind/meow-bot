@@ -5,6 +5,8 @@ import {
   IPlugin,
 } from "./types.ts";
 
+import { messageText } from "./utils.ts";
+
 const botid = 2531895613;
 
 const decoder = new TextDecoder("utf-8");
@@ -123,13 +125,13 @@ function emitGroupMessage(
   message: DeserializedMessage,
 ) {
   pluginList.forEach((plugin) => {
-    plugin.onGroupMessage(helper, gid, uid, message);
+    plugin.onGroupMessage && plugin.onGroupMessage(helper, gid, uid, message);
   });
 }
 
 function emitFriendMessage(uid: number, message: DeserializedMessage) {
   pluginList.forEach((plugin) => {
-    plugin.onFriendMessage(helper, uid, message);
+    plugin.onFriendMessage && plugin.onFriendMessage(helper, uid, message);
   });
 }
 
@@ -144,6 +146,26 @@ ws.onmessage = async (e) => {
     return;
   }
   if (data.data?.type === "GroupMessage") {
+    const [command, args] = messageText(data.data.messageChain).split(" ");
+    if (command === "/help") {
+      if (args) {
+        for (const plugin of pluginList) {
+          if (plugin.name === args) {
+            sendGroupMessage(data.data.sender.group.id, plugin.helpText);
+            return;
+          }
+        }
+        sendGroupMessage(data.data.sender.group.id, `没有找到 ${args} 插件`);
+        return;
+      }
+      sendGroupMessage(
+        data.data.sender.group.id,
+        `/help [plugin]\n已经安装的插件：\n${
+          pluginList.map(({ name }) => name).join("\n")
+        }`,
+      );
+      return;
+    }
     emitGroupMessage(
       data.data.sender.group.id,
       data.data.sender.id,
@@ -159,5 +181,5 @@ ws.onmessage = async (e) => {
 };
 
 pluginList.forEach((plugin) => {
-  plugin.initialize(helper);
+  plugin.initialize && plugin.initialize(helper);
 });

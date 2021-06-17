@@ -1,15 +1,8 @@
 import { DeserializedMessage, IHelper, IPlugin } from "../types.ts";
 
+const helpText = "还没写呢";
+
 export const RSSPlugin: IPlugin = {
-  initialize(ws: IHelper) {
-  },
-  onGroupMessage(
-    ws: IHelper,
-    gid: number,
-    uid: number,
-    message: DeserializedMessage,
-  ) {
-  },
-  onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage) {
-  },
+  name: "rss",
+  helpText,
 };

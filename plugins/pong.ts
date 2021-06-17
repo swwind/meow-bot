@@ -1,13 +1,15 @@
 import { DeserializedMessage, IHelper, IPlugin } from "../types.ts";
 import { messageText } from "../utils.ts";
 
+const helpText = "直接发送 ping";
+
 export const PongPlugin: IPlugin = {
-  initialize(ws: IHelper) {
-  },
+  name: "ping",
+  helpText,
   onGroupMessage(
     ws: IHelper,
     gid: number,
-    uid: number,
+    _uid: number,
     message: DeserializedMessage,
   ) {
     const text = messageText(message.messageChain);

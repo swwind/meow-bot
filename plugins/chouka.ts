@@ -136,9 +136,11 @@ function arknightsChouka(gid: number, uid: number, chizi: ArknightsChizi) {
   return res[Math.floor(Math.random() * res?.length)];
 }
 
+const helpText = `直接发送以下内容即可模拟抽卡：{ 原神常驻池, 原神活动池, 方舟常驻池 } + { 单抽, 十连 }`;
+
 export const ChouKaPlugin: IPlugin = {
-  initialize(ws: IHelper) {
-  },
+  name: "chouka",
+  helpText,
   onGroupMessage(
     ws: IHelper,
     gid: number,
@@ -188,7 +190,5 @@ export const ChouKaPlugin: IPlugin = {
         `${ArknightsChangzhu.name}\n${result.join("\n")}`,
       );
     }
-  },
-  onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage) {
   },
 };
