@@ -1,4 +1,4 @@
-import { DeserializedMessage, IHelper, IPlugin } from "../types.ts";
+import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
 import { messageText } from "../utils.ts";
 import { createHash } from "../mod.ts";
 
@@ -11,9 +11,9 @@ const helpText = "请回复需要计算哈希值的消息，支持的算法：" 
 export const HashPlugin: IPlugin = {
   name: "hash",
   helpText,
-  onGroupMessage(
-    ws: IHelper,
-    gid: number,
+  onAllMessage(
+    helper: IHelperReply,
+    _gid: number,
     _uid: number,
     message: DeserializedMessage,
   ) {
@@ -24,7 +24,7 @@ export const HashPlugin: IPlugin = {
         if (text === algo) {
           const hash = createHash(algo as any);
           hash.update(quoting);
-          ws.sendGroupMessage(gid, hash.toString("hex"));
+          helper.reply(hash.toString("hex"));
           return;
         }
       }

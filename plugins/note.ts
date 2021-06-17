@@ -1,6 +1,6 @@
 import {
   DeserializedMessage,
-  IHelper,
+  IHelperReply,
   IMessageChain,
   IPlugin,
 } from "../types.ts";
@@ -19,7 +19,7 @@ export const NotePlugin: IPlugin = {
   name: "note",
   helpText,
   onGroupMessage(
-    ws: IHelper,
+    helper: IHelperReply,
     gid: number,
     _uid: number,
     message: DeserializedMessage,
@@ -28,56 +28,56 @@ export const NotePlugin: IPlugin = {
     const list = text.split(" ").filter((a) => !!a);
     if (list[0] === "/note") {
       if (list.length < 2 || list[1] === "help") {
-        ws.sendGroupMessage(gid, helpText);
+        helper.reply(helpText);
         return;
       }
       if (list[1] === "set") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, "参数错误");
+          helper.reply("参数错误");
           return;
         }
         if (!message.quote) {
-          ws.sendGroupMessage(gid, "请回复需要写入的内容");
+          helper.reply("请回复需要写入的内容");
           return;
         }
         storage.set(`${gid}.${list[2]}`, message.quote);
-        ws.sendGroupMessage(gid, "添加成功");
+        helper.reply("添加成功");
         return;
       }
       if (list[1] === "append") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, "参数错误");
+          helper.reply("参数错误");
           return;
         }
         if (!message.quote) {
-          ws.sendGroupMessage(gid, "请回复需要写入的内容");
+          helper.reply("请回复需要写入的内容");
           return;
         }
         const last = storage.get(`${gid}.${list[2]}`) ?? [];
         storage.set(`${gid}.${list[2]}`, last.concat(message.quote));
-        ws.sendGroupMessage(gid, "更新成功");
+        helper.reply("更新成功");
         return;
       }
       if (list[1] === "get") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, "参数错误");
+          helper.reply("参数错误");
           return;
         }
         const note = storage.get(`${gid}.${list[2]}`);
         if (typeof note === "string") {
-          ws.sendGroupMessage(gid, note);
+          helper.reply(note);
         } else {
-          ws.sendGroupMessage(gid, `找不到 ${list[2]}`);
+          helper.reply(`找不到 ${list[2]}`);
         }
         return;
       }
       if (list[1] === "delete") {
         if (!list[2]) {
-          ws.sendGroupMessage(gid, "参数错误");
+          helper.reply("参数错误");
           return;
         }
         const success = storage.delete(`${gid}.${list[2]}`);
-        ws.sendGroupMessage(gid, success ? "删除成功" : "删除失败");
+        helper.reply(success ? "删除成功" : "删除失败");
         return;
       }
       if (list[1] === "list") {
@@ -86,16 +86,16 @@ export const NotePlugin: IPlugin = {
           return key.startsWith(header) ? key.slice(header.length) : "";
         }).filter((a) => !!a);
         const message = data.length ? data.join("\n") : "没有 note";
-        ws.sendGroupMessage(gid, message);
+        helper.reply(message);
         return;
       }
-      ws.sendGroupMessage(gid, helpText);
+      helper.reply(helpText);
       return;
     }
 
     const note = storage.get(`${gid}.${text}`);
     if (note) {
-      ws.sendGroupMessage(gid, note);
+      helper.reply(note);
       return;
     }
   },

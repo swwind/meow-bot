@@ -1,4 +1,4 @@
-import { DeserializedMessage, IHelper, IPlugin } from "../types.ts";
+import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
 import { messageText, Storage } from "../utils.ts";
 
 const storage = new Storage<string, number>("chouka");
@@ -141,8 +141,8 @@ const helpText = `直接发送以下内容即可模拟抽卡：{ 原神常驻池
 export const ChouKaPlugin: IPlugin = {
   name: "chouka",
   helpText,
-  onGroupMessage(
-    ws: IHelper,
+  onAllMessage(
+    helper: IHelperReply,
     gid: number,
     uid: number,
     message: DeserializedMessage,
@@ -150,43 +150,40 @@ export const ChouKaPlugin: IPlugin = {
     const text = messageText(message.messageChain);
     if (text === "原神常驻池单抽") {
       const result = yuanshenChouka(gid, uid, YuanshenChangzhu);
-      ws.sendGroupMessage(gid, `${YuanshenChangzhu.name}\n${result}`);
+      helper.reply(`${YuanshenChangzhu.name}\n${result}`);
     }
     if (text === "原神常驻池十连") {
       const result = [];
       for (let i = 0; i < 10; ++i) {
         result.push(yuanshenChouka(gid, uid, YuanshenChangzhu));
       }
-      ws.sendGroupMessage(
-        gid,
+      helper.reply(
         `${YuanshenChangzhu.name}\n${result.join("\n")}`,
       );
     }
     if (text === "原神活动池单抽") {
       const result = yuanshenChouka(gid, uid, YuanshenHuodong1);
-      ws.sendGroupMessage(gid, `${YuanshenHuodong1.name}\n${result}`);
+      helper.reply(`${YuanshenHuodong1.name}\n${result}`);
     }
     if (text === "原神活动池十连") {
       const result = [];
       for (let i = 0; i < 10; ++i) {
         result.push(yuanshenChouka(gid, uid, YuanshenHuodong1));
       }
-      ws.sendGroupMessage(
-        gid,
+      helper.reply(
         `${YuanshenHuodong1.name}\n${result.join("\n")}`,
       );
     }
     if (text === "方舟常驻池单抽") {
       const result = arknightsChouka(gid, uid, ArknightsChangzhu);
-      ws.sendGroupMessage(gid, `${ArknightsChangzhu.name}\n${result}`);
+      helper.reply(`${ArknightsChangzhu.name}\n${result}`);
     }
     if (text === "方舟常驻池十连") {
       const result = [];
       for (let i = 0; i < 10; ++i) {
         result.push(arknightsChouka(gid, uid, ArknightsChangzhu));
       }
-      ws.sendGroupMessage(
-        gid,
+      helper.reply(
         `${ArknightsChangzhu.name}\n${result.join("\n")}`,
       );
     }

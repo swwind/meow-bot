@@ -85,7 +85,7 @@ async function deserializeMessageChain(
   };
 }
 
-function sendMessage(command: String, subCommand: String | null, content: any) {
+function sendCommand(command: String, subCommand: String | null, content: any) {
   ws.send(JSON.stringify({
     syncId: "-1",
     command,
@@ -94,7 +94,7 @@ function sendMessage(command: String, subCommand: String | null, content: any) {
   }));
 }
 function sendGroupMessage(group: number, text: string | IMessageChain) {
-  sendMessage("sendGroupMessage", null, {
+  sendCommand("sendGroupMessage", null, {
     target: group,
     messageChain: Array.isArray(text)
       ? text.filter(({ type }) => type != "Source")
@@ -104,7 +104,7 @@ function sendGroupMessage(group: number, text: string | IMessageChain) {
   });
 }
 function sendFriendMessage(uid: number, text: string | IMessageChain) {
-  sendMessage("sendFriendMessage", null, {
+  sendCommand("sendFriendMessage", null, {
     target: uid,
     messageChain: Array.isArray(text)
       ? text.filter(({ type }) => type != "Source")
@@ -114,24 +114,31 @@ function sendFriendMessage(uid: number, text: string | IMessageChain) {
   });
 }
 
-const helper: IHelper = {
-  sendGroupMessage,
-  sendFriendMessage,
-};
-
 function emitGroupMessage(
   gid: number,
   uid: number,
   message: DeserializedMessage,
 ) {
   pluginList.forEach((plugin) => {
+    const helper = {
+      sendFriendMessage,
+      sendGroupMessage,
+      reply: sendGroupMessage.bind(null, gid),
+    };
     plugin.onGroupMessage && plugin.onGroupMessage(helper, gid, uid, message);
+    plugin.onAllMessage && plugin.onAllMessage(helper, gid, uid, message);
   });
 }
 
 function emitFriendMessage(uid: number, message: DeserializedMessage) {
   pluginList.forEach((plugin) => {
+    const helper = {
+      sendFriendMessage,
+      sendGroupMessage,
+      reply: sendFriendMessage.bind(null, uid),
+    };
     plugin.onFriendMessage && plugin.onFriendMessage(helper, uid, message);
+    plugin.onAllMessage && plugin.onAllMessage(helper, 0, uid, message);
   });
 }
 
@@ -145,27 +152,37 @@ ws.onmessage = async (e) => {
     }
     return;
   }
-  if (data.data?.type === "GroupMessage") {
-    const [command, args] = messageText(data.data.messageChain).split(" ");
+
+  if (data.data?.messageChain) {
+    const [command, args] = messageText(data.data.messageChain).split(" ", 2);
     if (command === "/help") {
+      let replyMessage = "";
+
       if (args) {
+        replyMessage = `没有找到 ${args} 插件`;
         for (const plugin of pluginList) {
           if (plugin.name === args) {
-            sendGroupMessage(data.data.sender.group.id, plugin.helpText);
-            return;
+            replyMessage = plugin.helpText;
+            break;
           }
         }
-        sendGroupMessage(data.data.sender.group.id, `没有找到 ${args} 插件`);
-        return;
-      }
-      sendGroupMessage(
-        data.data.sender.group.id,
-        `/help [plugin]\n已经安装的插件：\n${
+      } else {
+        replyMessage = `/help [plugin]\n已经安装的插件：\n${
           pluginList.map(({ name }) => name).join("\n")
-        }`,
-      );
+        }`;
+      }
+
+      if (data.data.type === "GroupMessage") {
+        sendGroupMessage(data.data.sender.group.id, replyMessage);
+      } else if (data.data.type === "FriendMessage") {
+        sendFriendMessage(data.data.sender.id, replyMessage);
+      }
+
       return;
     }
+  }
+
+  if (data.data?.type === "GroupMessage") {
     emitGroupMessage(
       data.data.sender.group.id,
       data.data.sender.id,
@@ -181,5 +198,8 @@ ws.onmessage = async (e) => {
 };
 
 pluginList.forEach((plugin) => {
-  plugin.initialize && plugin.initialize(helper);
+  plugin.initialize && plugin.initialize({
+    sendFriendMessage,
+    sendGroupMessage,
+  });
 });

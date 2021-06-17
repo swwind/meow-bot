@@ -41,24 +41,34 @@ export interface DeserializedMessage {
   quote: IMessageChain | null;
 }
 
+export interface IHelper {
+  sendGroupMessage(group: number, text: string | IMessageChain): void;
+  sendFriendMessage(user: number, text: string | IMessageChain): void;
+}
+
+export interface IHelperReply extends IHelper {
+  reply(text: string | IMessageChain): void;
+}
+
 export interface IPlugin {
   name: string;
   helpText: string;
-  initialize?(ws: IHelper): void;
+  initialize?(helper: IHelper): void;
   onGroupMessage?(
-    ws: IHelper,
+    helper: IHelperReply,
     gid: number,
     uid: number,
     message: DeserializedMessage,
   ): void;
   onFriendMessage?(
-    ws: IHelper,
+    helper: IHelperReply,
     uid: number,
     message: DeserializedMessage,
   ): void;
-}
-
-export interface IHelper {
-  sendGroupMessage(group: number, text: String | IMessageChain): void;
-  sendFriendMessage(user: number, text: String | IMessageChain): void;
+  onAllMessage?(
+    helper: IHelperReply,
+    gid: number,
+    uid: number,
+    message: DeserializedMessage,
+  ): void;
 }

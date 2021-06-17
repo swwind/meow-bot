@@ -1,27 +1,20 @@
-import { DeserializedMessage, IHelper, IPlugin } from "../types.ts";
+import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
 import { messageText } from "../utils.ts";
 
-const helpText = "直接发送 ping";
+const helpText = "/ping";
 
 export const PongPlugin: IPlugin = {
   name: "ping",
   helpText,
-  onGroupMessage(
-    ws: IHelper,
-    gid: number,
+  onAllMessage(
+    helper: IHelperReply,
+    _gid: number,
     _uid: number,
     message: DeserializedMessage,
   ) {
     const text = messageText(message.messageChain);
-    if (text === "ping") {
-      ws.sendGroupMessage(gid, "pong");
-      return;
-    }
-  },
-  onFriendMessage(ws: IHelper, uid: number, message: DeserializedMessage) {
-    const text = messageText(message.messageChain);
-    if (text === "ping") {
-      ws.sendFriendMessage(uid, "pong");
+    if (text === "/ping") {
+      helper.reply("pong");
       return;
     }
   },
