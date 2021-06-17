@@ -1,6 +1,6 @@
-import { IPlugin, IHelper } from "../types.ts";
-import { messageText, Storage } from '../utils.ts';
-import { deserializeFeed, JsonFeed } from '../deps.ts';
+import { IHelper, IPlugin } from "../types.ts";
+import { messageText, Storage } from "../utils.ts";
+import { deserializeFeed, JsonFeed } from "../deps.ts";
 
 const helpText = `自带 RSSHub 镜像
 /rss add <url>
@@ -21,7 +21,10 @@ function fetchFeed(url: string, timeout = 10000) {
 }
 
 function getUniqueKey(item: any) {
-  return `${item.url}:${item.title}:${item.date_modified}`.replaceAll('\n', ' ');
+  return `${item.url}:${item.title}:${item.date_modified}`.replaceAll(
+    "\n",
+    " ",
+  );
 }
 
 function getStorageFilename(gid: number) {
@@ -30,14 +33,14 @@ function getStorageFilename(gid: number) {
 
 async function readLibrary(gid: number) {
   try {
-    return (await Deno.readTextFile(getStorageFilename(gid))).split('\n');
+    return (await Deno.readTextFile(getStorageFilename(gid))).split("\n");
   } catch (e) {
     return [];
   }
 }
 async function writeLibrary(gid: number, storage: string[]) {
   try {
-    await Deno.writeTextFile(getStorageFilename(gid), storage.join('\n'));
+    await Deno.writeTextFile(getStorageFilename(gid), storage.join("\n"));
   } catch (e) {
     // ignore
   }
@@ -49,7 +52,7 @@ async function addToLibrary(gid: number, item: any) {
   if (storage.indexOf(key) > -1) {
     return false;
   }
-  await writeLibrary(gid, storage.concat([ key ]));
+  await writeLibrary(gid, storage.concat([key]));
   return true;
 }
 
@@ -70,7 +73,7 @@ interface IRSSSubscribe {
   url: string;
 }
 
-const storage = new Storage<number, IRSSSubscribe[]>('rss-subscribe');
+const storage = new Storage<number, IRSSSubscribe[]>("rss-subscribe");
 
 async function updateFeeds(helper: IHelper) {
   for (const gid of storage.keys()) {
@@ -81,7 +84,10 @@ async function updateFeeds(helper: IHelper) {
         for (const item of feed.items) {
           const isNew = await addToLibrary(gid, item);
           if (isNew) {
-            helper.sendGroupMessage(gid, `${sub.title} 更新了 ${item.title}\n${item.url}`);
+            helper.sendGroupMessage(
+              gid,
+              `${sub.title} 更新了 ${item.title}\n${item.url}`,
+            );
           }
         }
       } catch (e) {
@@ -100,21 +106,27 @@ export const RSSPlugin: IPlugin = {
     }, 10 * 60 * 1000);
   },
   async onGroupMessage(helper, gid, _uid, message) {
-    const [command, subcommand, arg1] = messageText(message.messageChain).split(' ', 3);
-    if (command === '/rss') {
-      if (subcommand === 'add') {
+    const [command, subcommand, arg1] = messageText(message.messageChain).split(
+      " ",
+      3,
+    );
+    if (command === "/rss") {
+      if (subcommand === "add") {
         if (!arg1) {
-          helper.reply('参数错误');
+          helper.reply("参数错误");
           return;
         }
 
         try {
           new URL(arg1);
         } catch (e) {
-          helper.reply('？');
+          helper.reply("？");
           return;
         }
-        const suburl = arg1.replace(/^https?:\/\/rsshub\.app\//, 'http://localhost:1200/');
+        const suburl = arg1.replace(
+          /^https?:\/\/rsshub\.app\//,
+          "http://localhost:1200/",
+        );
 
         try {
           const feed = await fetchFeed(suburl);
@@ -127,20 +139,20 @@ export const RSSPlugin: IPlugin = {
           storage.set(gid, subs);
           helper.reply(`成功订阅了 ${feed.title}`);
         } catch (e) {
-          helper.reply('订阅失败');
+          helper.reply("订阅失败");
         }
         return;
       }
 
-      if (subcommand === 'delete') {
+      if (subcommand === "delete") {
         const number = Number(arg1);
         if (isNaN(number)) {
-          helper.reply('？？');
+          helper.reply("？？");
           return;
         }
         const subs = storage.getOr(gid, []);
         if (number < 0 || number >= subs.length || !subs[number]) {
-          helper.reply('java.lang.ArrayIndexOutOfBoundsException');
+          helper.reply("java.lang.ArrayIndexOutOfBoundsException");
           return;
         }
         const removed = subs[number];
@@ -149,19 +161,23 @@ export const RSSPlugin: IPlugin = {
         return;
       }
 
-      if (subcommand === 'list') {
+      if (subcommand === "list") {
         const subs = storage.getOr(gid, []);
-        helper.reply(`RSS 订阅列表：\n${subs.map((sub, index) => `[${index}] ${sub.title}`).join('\n')}`);
+        helper.reply(
+          `RSS 订阅列表：\n${
+            subs.map((sub, index) => `[${index}] ${sub.title}`).join("\n")
+          }`,
+        );
         return;
       }
 
-      if (subcommand === 'update') {
+      if (subcommand === "update") {
         await updateFeeds(helper);
-        helper.reply('更新完毕');
+        helper.reply("更新完毕");
         return;
       }
 
-      helper.reply('/help rss');
+      helper.reply("/help rss");
     }
-  }
+  },
 };

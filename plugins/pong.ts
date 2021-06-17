@@ -14,7 +14,7 @@ export const PongPlugin: IPlugin = {
   ) {
     const text = messageText(message.messageChain);
     if (text === "/ping") {
-      helper.reply(Math.random() < .01 ? 'ping 你🐴呢' : "pong");
+      helper.reply(Math.random() < .01 ? "ping 你🐴呢" : "pong");
       return;
     }
   },
