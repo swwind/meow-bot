@@ -1,6 +1,6 @@
 import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
 import { messageText } from "../utils.ts";
-import { createHash } from "../mod.ts";
+import { createHash } from "../deps.ts";
 
 const supported =
   "md2 md4 md5 ripemd160 ripemd320 sha1 sha224 sha256 sha384 sha512 sha3-224 sha3-256 sha3-384 sha3-512 keccak224 keccak256 keccak384 keccak512"
