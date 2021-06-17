@@ -18,14 +18,15 @@ export const HashPlugin: IPlugin = {
     message: DeserializedMessage,
   ) {
     const text = messageText(message.messageChain);
-    if (message.quote) {
-      const quoting = messageText(message.quote);
-      for (const algo of supported) {
-        if (text === algo) {
+    for (const algo of supported) {
+      if (text === algo) {
+        if (message.quote) {
+          const quoting = messageText(message.quote);
           const hash = createHash(algo as any);
           hash.update(quoting);
           helper.reply(hash.toString("hex"));
-          return;
+        } else {
+          helper.reply(`请回复需要计算 ${algo} 哈希值的消息`);
         }
       }
     }
