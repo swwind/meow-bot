@@ -10,7 +10,7 @@ import { messageText } from "./utils.ts";
 const botid = 2531895613;
 
 const decoder = new TextDecoder("utf-8");
-const data = await Deno.readFile("key");
+const data = await Deno.readFile("/flag");
 const verifyKey = decoder.decode(data);
 
 const url = `ws://localhost:21414/all?verifyKey=${verifyKey}&qq=${botid}`;
