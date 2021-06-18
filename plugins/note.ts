@@ -50,11 +50,11 @@ export const NotePlugin: IPlugin = {
     message: DeserializedMessage,
   ) {
     const text = messageText(message.messageChain);
-    const list = text.split(" ").filter((a) => !!a);
+    const [command, subcommand, name] = text.split(" ", 3);
 
-    if (list[0] === "/note") {
-      if (list[1] === "set") {
-        if (!list[2]) {
+    if (command === "/note") {
+      if (subcommand === "set") {
+        if (!name) {
           helper.reply("缺少参数");
           return;
         }
@@ -62,7 +62,6 @@ export const NotePlugin: IPlugin = {
           helper.reply("请回复需要写入的内容");
           return;
         }
-        const name = list[2];
         const note = JSON.stringify(message.quote);
         await collection.updateOne({ gid, name }, { $set: { note } }, {
           upsert: true,
@@ -71,8 +70,8 @@ export const NotePlugin: IPlugin = {
         return;
       }
 
-      if (list[1] === "append") {
-        if (!list[2]) {
+      if (subcommand === "append") {
+        if (!name) {
           helper.reply("缺少参数");
           return;
         }
@@ -81,7 +80,6 @@ export const NotePlugin: IPlugin = {
           return;
         }
 
-        const name = list[2];
         const oldnote = await getNote(gid, name) ?? [];
         const note = JSON.stringify(oldnote.concat(message.quote));
 
@@ -92,35 +90,33 @@ export const NotePlugin: IPlugin = {
         return;
       }
 
-      if (list[1] === "get") {
-        if (!list[2]) {
+      if (subcommand === "get") {
+        if (!name) {
           helper.reply("缺少参数");
           return;
         }
 
-        const name = list[2];
         const oldnote = await getNote(gid, name);
 
         if (oldnote) {
           helper.reply(oldnote);
         } else {
-          helper.reply(`找不到 ${list[2]}`);
+          helper.reply(`找不到 ${name}`);
         }
         return;
       }
 
-      if (list[1] === "delete") {
-        if (!list[2]) {
+      if (subcommand === "delete") {
+        if (!name) {
           helper.reply("参数错误");
           return;
         }
-        const name = list[2];
         const success = await collection.deleteOne({ gid, name });
         helper.reply(success > 0 ? "删除成功" : "删除失败");
         return;
       }
 
-      if (list[1] === "list") {
+      if (subcommand === "list") {
         const data = await collection.find({ gid }).map((item) => item.name);
         helper.reply(data.length ? data.join("\n") : "没有 note");
         return;
