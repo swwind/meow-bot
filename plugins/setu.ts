@@ -7,10 +7,12 @@ function fetchSetu(timeout = 10000) {
   return Promise.race([
     new Promise<string>((_, reject) => setTimeout(reject, timeout)),
     (async () => {
-      const response = await fetch('https://api.lovemiku.online/miku/?master=1');
+      const response = await fetch(
+        "https://api.lovemiku.online/miku/?master=1",
+      );
       const json = await response.json();
       const url: string = json?.url;
-      if (!url || typeof url !== 'string') {
+      if (!url || typeof url !== "string") {
         throw new Error("API error");
       }
       return url;
@@ -32,11 +34,11 @@ export const SetuPlugin: IPlugin = {
       try {
         const url = await fetchSetu();
         helper.reply([{
-          type: 'Image',
+          type: "Image",
           url,
         }]);
       } catch (e) {
-        helper.reply('获取涩图失败');
+        helper.reply("获取涩图失败");
       }
       return;
     }
@@ -48,8 +50,8 @@ export const SetuPlugin: IPlugin = {
   ) {
     const text = messageText(message.messageChain);
     if (text === "来点涩图") {
-      helper.reply('别冲了');
+      helper.reply("别冲了");
       return;
     }
-  }
+  },
 };
