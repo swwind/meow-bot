@@ -6,9 +6,9 @@ export type IMessage =
   | {
     type: "Image";
     url: string;
-    imageId: string;
-    path: null;
-    base64: null;
+    imageId?: string;
+    path?: null;
+    base64?: null;
   }
   | {
     type: "At";

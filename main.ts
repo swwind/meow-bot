@@ -20,6 +20,7 @@ import { PongPlugin } from "./plugins/pong.ts";
 import { NotePlugin } from "./plugins/note.ts";
 import { ChoukaPlugin } from "./plugins/chouka.ts";
 import { HashPlugin } from "./plugins/hash.ts";
+import { SetuPlugin } from "./plugins/setu.ts";
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
@@ -27,6 +28,7 @@ const pluginList: IPlugin[] = [
   NotePlugin,
   ChoukaPlugin,
   HashPlugin,
+  SetuPlugin,
 ];
 
 const ws = new WebSocket(url);
