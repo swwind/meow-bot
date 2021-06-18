@@ -1,5 +1,5 @@
 import { IHelper, IPlugin } from "../types.ts";
-import { messageText, Storage } from "../utils.ts";
+import { getCollection, messageText } from "../utils.ts";
 import { deserializeFeed, JsonFeed } from "../deps.ts";
 
 const helpText = `自带 RSSHub 镜像
@@ -7,6 +7,29 @@ const helpText = `自带 RSSHub 镜像
 /rss delete [id]
 /rss update
 /rss list`;
+
+interface CntSchema {
+  gid: number;
+  count: number;
+}
+
+interface RSSSchema {
+  gid: number;
+  name: string;
+  url: string;
+  id: number;
+}
+
+interface SubSchema {
+  gid: number;
+  title: string;
+  url: string;
+  date_modified: Date;
+}
+
+const collectionRSS = getCollection<RSSSchema>("rss");
+const collectionSub = getCollection<SubSchema>("rss-sub");
+const collectionCnt = getCollection<CntSchema>("rss-cnt");
 
 function fetchFeed(url: string, timeout = 10000) {
   return Promise.race([
@@ -20,79 +43,41 @@ function fetchFeed(url: string, timeout = 10000) {
   ]);
 }
 
-function getUniqueKey(item: any) {
-  return `${item.url}:${item.title}:${item.date_modified}`.replaceAll(
-    "\n",
-    " ",
-  );
-}
-
-function getStorageFilename(gid: number) {
-  return `data/rss${gid}`;
-}
-
-async function readLibrary(gid: number) {
-  try {
-    return (await Deno.readTextFile(getStorageFilename(gid))).split("\n");
-  } catch (e) {
-    return [];
-  }
-}
-async function writeLibrary(gid: number, storage: string[]) {
-  try {
-    await Deno.writeTextFile(getStorageFilename(gid), storage.join("\n"));
-  } catch (e) {
-    // ignore
-  }
-}
-
-async function addToLibrary(gid: number, item: any) {
-  const storage = await readLibrary(gid);
-  const key = getUniqueKey(item);
-  if (storage.indexOf(key) > -1) {
+async function addToLibrary(sub: SubSchema) {
+  const findRes = await collectionSub.findOne(sub);
+  if (findRes) {
     return false;
   }
-  await writeLibrary(gid, storage.concat([key]));
+  await collectionSub.insertOne(sub);
   return true;
 }
 
-async function addALotToLibrary(gid: number, items: any[]) {
-  const storage = await readLibrary(gid);
-  for (const item of items) {
-    const key = getUniqueKey(item);
-    if (storage.indexOf(key) > -1) {
-      continue;
-    }
-    storage.push(key);
-  }
-  await writeLibrary(gid, storage);
-}
+async function updateFeeds(helper: IHelper, gidOnly?: number | undefined) {
+  const rss = await collectionRSS.find(
+    typeof gidOnly === "number" ? { gid: gidOnly } : {},
+  ).toArray();
 
-interface IRSSSubscribe {
-  title: string;
-  url: string;
-}
+  for (const sub of rss) {
+    const gid = sub.gid;
+    try {
+      const feed = await fetchFeed(sub.url);
 
-const storage = new Storage<number, IRSSSubscribe[]>("rss-subscribe");
+      for (const item of feed.items) {
+        const url = item.url ?? "[nolink]";
+        const title = item.title ?? "[untitled]";
+        const date_modified = item.date_modified ?? new Date(0);
 
-async function updateFeeds(helper: IHelper) {
-  for (const gid of storage.keys()) {
-    const subs = storage.getOr(gid, []);
-    for (const sub of subs) {
-      try {
-        const feed = await fetchFeed(sub.url);
-        for (const item of feed.items) {
-          const isNew = await addToLibrary(gid, item);
-          if (isNew) {
-            helper.sendGroupMessage(
-              gid,
-              `${sub.title} 更新了 ${item.title}\n${item.url}`,
-            );
-          }
+        const isNew = await addToLibrary({ gid, url, title, date_modified });
+
+        if (isNew) {
+          helper.sendGroupMessage(
+            gid,
+            `${sub.name} 更新了 ${item.title}\n${item.url}`,
+          );
         }
-      } catch (e) {
-        // ignore it
       }
+    } catch (e) {
+      // ignore it
     }
   }
 }
@@ -106,73 +91,95 @@ export const RSSPlugin: IPlugin = {
     }, 10 * 60 * 1000);
   },
   async onGroupMessage(helper, gid, _uid, message) {
-    const [command, subcommand, arg1] = messageText(message.messageChain).split(
+    const [command, subcommand, arg] = messageText(message.messageChain).split(
       " ",
       3,
     );
+
     if (command === "/rss") {
       if (subcommand === "add") {
-        if (!arg1) {
+        if (!arg) {
           helper.reply("参数错误");
           return;
         }
 
         try {
-          new URL(arg1);
+          new URL(arg);
         } catch (e) {
-          helper.reply("？");
+          helper.reply("无法解析 URL");
           return;
         }
-        const suburl = arg1.replace(
+
+        const url = arg.replace(
           /^https?:\/\/rsshub\.app\//,
           "http://localhost:1200/",
         );
 
+        const findRes = await collectionRSS.findOne({ gid, url });
+        if (findRes) {
+          helper.reply("不能重复订阅");
+          return;
+        }
+
         try {
-          const feed = await fetchFeed(suburl);
-          await addALotToLibrary(gid, feed.items);
-          const subs = storage.getOr(gid, []);
-          subs.push({
-            title: feed.title,
-            url: suburl,
+          const feed = await fetchFeed(url);
+          for (const item of feed.items) {
+            const url = item.url ?? "[nolink]";
+            const title = item.title ?? "[untitled]";
+            const date_modified = item.date_modified ?? new Date(0);
+            await addToLibrary({ gid, url, title, date_modified });
+          }
+          const name = feed.title;
+
+          await collectionCnt.updateOne({ gid }, { $inc: { count: 1 } }, {
+            upsert: true,
           });
-          storage.set(gid, subs);
-          helper.reply(`成功订阅了 ${feed.title}`);
+          const findRes = await collectionCnt.findOne({ gid });
+          if (!findRes) {
+            helper.reply("数据库炸了，问题很大");
+            return;
+          }
+          const count = findRes.count;
+          await collectionRSS.insertOne({ gid, name, url, id: count });
+          helper.reply(`成功订阅了 [${count}] ${name}`);
         } catch (e) {
-          helper.reply("订阅失败");
+          helper.reply("获取内容失败");
         }
         return;
       }
 
       if (subcommand === "delete") {
-        const number = Number(arg1);
-        if (isNaN(number)) {
-          helper.reply("？？");
+        const id = Number(arg);
+        if (isNaN(id)) {
+          helper.reply("无法识别");
           return;
         }
-        const subs = storage.getOr(gid, []);
-        if (number < 0 || number >= subs.length || !subs[number]) {
-          helper.reply("java.lang.ArrayIndexOutOfBoundsException");
+        const findRes = await collectionRSS.findOne({ gid, id });
+        if (!findRes) {
+          helper.reply(`找不到序号为 [${id}] 的订阅`);
           return;
         }
-        const removed = subs[number];
-        storage.set(gid, subs.slice(0, number).concat(subs.slice(number + 1)));
-        helper.reply(`成功取消订阅了 ${removed.title}`);
+        const deleteRes = await collectionRSS.deleteOne({ gid, id });
+        helper.reply(
+          deleteRes > 0 ? `成功取消订阅了 [${id}] ${findRes.name}` : "删除订阅失败",
+        );
         return;
       }
 
       if (subcommand === "list") {
-        const subs = storage.getOr(gid, []);
+        const rss = await collectionRSS.find({ gid }).toArray();
         helper.reply(
-          `RSS 订阅列表：\n${
-            subs.map((sub, index) => `[${index}] ${sub.title}`).join("\n")
-          }`,
+          rss.length
+            ? `RSS 订阅列表：\n${
+              rss.map((sub) => `[${sub.id}] ${sub.name}`).join("\n")
+            }`
+            : "还没有订阅",
         );
         return;
       }
 
       if (subcommand === "update") {
-        await updateFeeds(helper);
+        await updateFeeds(helper, gid);
         helper.reply("更新完毕");
         return;
       }

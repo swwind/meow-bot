@@ -1,42 +1,15 @@
 import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
-import { messageText, Storage } from "../utils.ts";
+import { getCollection, messageText } from "../utils.ts";
 
-const storage = new Storage<string, number>("chouka");
-
-interface YuanshenChizi {
-  threeStar: string[];
-  fourStar: string[];
-  fiveStar: string[];
+interface ChoukaSchema {
+  gid: number;
+  uid: number;
+  yuanshen_last_four: number;
+  yuanshen_last_five: number;
+  arknights_last_six: number;
 }
 
-function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
-  const last_four_star = storage.getOr(`${gid}.${uid}.lastfour`, 0);
-  const last_five_star = storage.getOr(`${gid}.${uid}.lastfive`, 0);
-
-  let star = 3;
-  if (last_five_star >= 89) star = 5;
-  else if (last_four_star >= 9) star = 4;
-  else {
-    const random = Math.random() * 1000;
-    if (random < 6) star = 5;
-    else if (random < 57) star = 4;
-    else star = 3;
-  }
-
-  const now_four_star = star >= 4 ? 0 : last_four_star + 1;
-  const now_five_star = star >= 5 ? 0 : last_five_star + 1;
-
-  storage.set(`${gid}.${uid}.lastfour`, now_four_star);
-  storage.set(`${gid}.${uid}.lastfive`, now_five_star);
-
-  const chi = star === 3
-    ? chizi.threeStar
-    : star === 4
-    ? chizi.fourStar
-    : chizi.fiveStar;
-  const result = chi[Math.floor(Math.random() * chi.length)];
-  return result;
-}
+const collection = getCollection<ChoukaSchema>("chouka");
 
 function appendStar(stars: number) {
   return (x: string) => {
@@ -44,28 +17,67 @@ function appendStar(stars: number) {
   };
 }
 
+interface YuanshenChizi {
+  star3: string[];
+  star4: string[];
+  star5: string[];
+}
+
 const YuanshenChangzhu: YuanshenChizi = {
-  threeStar: "弹弓 神射手之誓 鸦羽弓 翡玉法球 讨龙英杰谭 魔导绪论 黑缨枪 以理服人 沐浴龙血的剑 铁影阔剑 飞天御剑 黎明神剑 冷刃"
+  star3: "弹弓 神射手之誓 鸦羽弓 翡玉法球 讨龙英杰谭 魔导绪论 黑缨枪 以理服人 沐浴龙血的剑 铁影阔剑 飞天御剑 黎明神剑 冷刃"
     .split(" ").map(appendStar(3)),
-  fourStar:
+  star4:
     "烟绯 罗莎莉亚 辛焱 砂糖 迪奥娜 重云 诺艾尔 班尼特 菲谢尔 凝光 行秋 北斗 香菱 安柏 雷泽 凯亚 芭芭拉 丽莎 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
       .split(" ")
       .map(appendStar(4)),
-  fiveStar: "刻晴 莫娜 七七 迪卢克 琴 阿莫斯之弓 天空之翼 四风原典 天空之卷 和璞鸢 天空之脊 狼的末路 天空之傲 天空之刃 风鹰剑"
+  star5: "刻晴 莫娜 七七 迪卢克 琴 阿莫斯之弓 天空之翼 四风原典 天空之卷 和璞鸢 天空之脊 狼的末路 天空之傲 天空之刃 风鹰剑"
     .split(" ").map(appendStar(5)),
 };
 
 const YuanshenHuodong1: YuanshenChizi = {
-  threeStar: "弹弓 神射手之誓 鸦羽弓 翡玉法球 讨龙英杰谭 魔导绪论 黑缨枪 以理服人 沐浴龙血的剑 铁影阔剑 飞天御剑 黎明神剑 冷刃"
+  star3: "弹弓 神射手之誓 鸦羽弓 翡玉法球 讨龙英杰谭 魔导绪论 黑缨枪 以理服人 沐浴龙血的剑 铁影阔剑 飞天御剑 黎明神剑 冷刃"
     .split(" ")
     .map(appendStar(3)),
-  fourStar:
+  star4:
     "砂糖 菲谢尔 芭芭拉 烟绯 罗莎莉亚 辛焱 迪奥娜 重云 诺艾尔 班尼特 凝光 行秋 北斗 香菱 雷泽 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
       .split(" ")
       .map(appendStar(4)),
-  fiveStar: "可莉 刻晴 莫娜 七七 迪卢克 琴"
+  star5: "可莉 刻晴 莫娜 七七 迪卢克 琴"
     .split(" ").map(appendStar(5)),
 };
+
+async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
+  const findRes = await collection.findOne({ gid, uid });
+  const yuanshen_last_five = findRes?.yuanshen_last_five ?? 0;
+  const yuanshen_last_four = findRes?.yuanshen_last_four ?? 0;
+
+  let star = 3;
+  if (yuanshen_last_five >= 89) star = 5;
+  else if (yuanshen_last_four >= 9) star = 4;
+  else {
+    const random = Math.random();
+    if (random < 0.006) star = 5;
+    else if (random < 0.057) star = 4;
+    else star = 3;
+  }
+
+  const now_last_four = star >= 4 ? 0 : yuanshen_last_four + 1;
+  const now_last_five = star >= 5 ? 0 : yuanshen_last_five + 1;
+
+  await collection.updateOne({ gid, uid }, {
+    $set: {
+      yuanshen_last_four: now_last_four,
+      yuanshen_last_five: now_last_five,
+    },
+  }, { upsert: true });
+
+  let res: string[] = [];
+  if (star === 5) res = chizi.star5;
+  if (star === 4) res = chizi.star4;
+  if (star === 3) res = chizi.star3;
+
+  return res[Math.floor(Math.random() * res.length)];
+}
 
 interface ArknightsChizi {
   star3: string[];
@@ -126,19 +138,29 @@ const ArknightsHuodong: ArknightsChizi = {
     .map(appendStar(3)),
 };
 
-function arknightsChouka(chizi: ArknightsChizi, gid: number, uid: number) {
-  const last_six_star = storage.getOr(`${gid}.${uid}.lastsix`, 0);
-  let six_p = 2;
-  if (last_six_star >= 50) six_p += (last_six_star - 49) * 2;
-  const random = Math.random() * 100;
+async function arknightsChouka(
+  chizi: ArknightsChizi,
+  gid: number,
+  uid: number,
+) {
+  const findRes = await collection.findOne({ gid, uid });
+  const last_six_star = findRes?.arknights_last_six ?? 0;
+
+  let six_p = 0.02;
+  if (last_six_star >= 50) six_p += (last_six_star - 49) * 0.02;
+  const random = Math.random();
   let star = 3;
   if (random < six_p) star = 6;
-  else if (random < 10) star = 5;
-  else if (random < 60) star = 4;
+  else if (random < 0.1) star = 5;
+  else if (random < 0.6) star = 4;
   else star = 3;
 
   const now_six_star = star === 6 ? 0 : last_six_star + 1;
-  storage.set(`${gid}.${uid}.lastsix`, now_six_star);
+  await collection.updateOne(
+    { gid, uid },
+    { $set: { arknights_last_six: now_six_star } },
+    { upsert: true },
+  );
 
   let res: string[] = [];
   if (star === 6) {
@@ -150,11 +172,9 @@ function arknightsChouka(chizi: ArknightsChizi, gid: number, uid: number) {
   if (star === 4) {
     res = Math.random() < chizi.star4_up_p ? chizi.star4_up : chizi.star4;
   }
-  if (star === 3) {
-    res = chizi.star3;
-  }
+  if (star === 3) res = chizi.star3;
 
-  return res[Math.floor(Math.random() * res?.length)];
+  return res[Math.floor(Math.random() * res.length)];
 }
 
 interface Game {
@@ -162,7 +182,7 @@ interface Game {
   kachi: {
     type: string;
     name: string;
-    chou(gid: number, uid: number): string;
+    chou(gid: number, uid: number): Promise<string>;
   }[];
 }
 
@@ -203,10 +223,10 @@ ${
   ).join("\n")
 }`;
 
-export const ChouKaPlugin: IPlugin = {
+export const ChoukaPlugin: IPlugin = {
   name: "chouka",
   helpText,
-  onAllMessage(
+  async onAllMessage(
     helper: IHelperReply,
     gid: number,
     uid: number,
@@ -219,13 +239,13 @@ export const ChouKaPlugin: IPlugin = {
         for (const kachi of game.kachi) {
           if (text.indexOf(kachi.type) > -1) {
             if (text.indexOf("单抽") > -1) {
-              const result = kachi.chou(gid, uid);
+              const result = await kachi.chou(gid, uid);
               helper.reply(`${kachi.name}\n${result}`);
               return;
             } else if (text.indexOf("十连") > -1) {
               const result = [];
               for (let i = 0; i < 10; ++i) {
-                result.push(kachi.chou(gid, uid));
+                result.push(await kachi.chou(gid, uid));
               }
               helper.reply(`${kachi.name}\n${result.join("\n")}`);
               return;

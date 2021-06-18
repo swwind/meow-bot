@@ -18,14 +18,14 @@ const url = `ws://localhost:21414/all?verifyKey=${verifyKey}&qq=${botid}`;
 import { RSSPlugin } from "./plugins/rss.ts";
 import { PongPlugin } from "./plugins/pong.ts";
 import { NotePlugin } from "./plugins/note.ts";
-import { ChouKaPlugin } from "./plugins/chouka.ts";
+import { ChoukaPlugin } from "./plugins/chouka.ts";
 import { HashPlugin } from "./plugins/hash.ts";
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
   PongPlugin,
   NotePlugin,
-  ChouKaPlugin,
+  ChoukaPlugin,
   HashPlugin,
 ];
 
