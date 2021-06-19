@@ -14,7 +14,7 @@ Make sure deno 1.10.3 installed.
 2. Configure mirai-api-http as following:
 
    ```yaml
-   adapters: 
+   adapters:
      - ws
    debug: false
    enableVerify: true
@@ -57,3 +57,5 @@ Make sure deno 1.10.3 installed.
    " | sudo tee /usr/lib/systemd/system/meow-bot.service
    sudo systemctl enable --now meow-bot.service
    ```
+
+5. In order to make `setu` plugin work, you need to put all your setu into `/root/setu/`.
