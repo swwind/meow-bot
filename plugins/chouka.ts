@@ -7,6 +7,8 @@ interface ChoukaSchema {
   yuanshen_last_four: number;
   yuanshen_last_five: number;
   arknights_last_six: number;
+  yuanshen_targeted_four: number;
+  yuanshen_targeted_five: number;
 }
 
 const collection = getCollection<ChoukaSchema>("chouka");
@@ -19,8 +21,14 @@ function appendStar(stars: number) {
 
 interface YuanshenChizi {
   star3: string[];
-  star4: string[];
   star5: string[];
+  star5_up: string[];
+  star5_up_p: number;
+  star5_up_baodi: number;
+  star4: string[];
+  star4_up: string[];
+  star4_up_p: number;
+  star4_up_baodi: number;
 }
 
 const YuanshenChangzhu: YuanshenChizi = {
@@ -30,8 +38,14 @@ const YuanshenChangzhu: YuanshenChizi = {
     "烟绯 罗莎莉亚 辛焱 砂糖 迪奥娜 重云 诺艾尔 班尼特 菲谢尔 凝光 行秋 北斗 香菱 安柏 雷泽 凯亚 芭芭拉 丽莎 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
       .split(" ")
       .map(appendStar(4)),
+  star4_up: [],
+  star4_up_p: 0,
+  star4_up_baodi: 0,
   star5: "刻晴 莫娜 七七 迪卢克 琴 阿莫斯之弓 天空之翼 四风原典 天空之卷 和璞鸢 天空之脊 狼的末路 天空之傲 天空之刃 风鹰剑"
     .split(" ").map(appendStar(5)),
+  star5_up: [],
+  star5_up_p: 0,
+  star5_up_baodi: 0,
 };
 
 const YuanshenHuodong1: YuanshenChizi = {
@@ -39,17 +53,25 @@ const YuanshenHuodong1: YuanshenChizi = {
     .split(" ")
     .map(appendStar(3)),
   star4:
-    "砂糖 菲谢尔 芭芭拉 烟绯 罗莎莉亚 辛焱 迪奥娜 重云 诺艾尔 班尼特 凝光 行秋 北斗 香菱 雷泽 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
+    "烟绯 罗莎莉亚 辛焱 迪奥娜 重云 诺艾尔 班尼特 凝光 行秋 北斗 香菱 雷泽 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
       .split(" ")
       .map(appendStar(4)),
-  star5: "可莉 刻晴 莫娜 七七 迪卢克 琴"
+  star4_up: "砂糖 菲谢尔 芭芭拉".split(" ").map(appendStar(4)),
+  star4_up_p: .5,
+  star4_up_baodi: 1,
+  star5: "刻晴 莫娜 七七 迪卢克 琴"
     .split(" ").map(appendStar(5)),
+  star5_up: "可莉".split(" ").map(appendStar(4)),
+  star5_up_p: .5,
+  star5_up_baodi: 1,
 };
 
 async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
   const findRes = await collection.findOne({ gid, uid });
   const yuanshen_last_five = findRes?.yuanshen_last_five ?? 0;
   const yuanshen_last_four = findRes?.yuanshen_last_four ?? 0;
+  const yuanshen_targeted_four = findRes?.yuanshen_targeted_four ?? 0;
+  const yuanshen_targeted_five = findRes?.yuanshen_targeted_five ?? 0;
 
   let star = 3;
   if (yuanshen_last_five >= 89) star = 5;
@@ -64,17 +86,43 @@ async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
   const now_last_four = star >= 4 ? 0 : yuanshen_last_four + 1;
   const now_last_five = star >= 5 ? 0 : yuanshen_last_five + 1;
 
+  let res: string[] = [];
+  let now_target_four = yuanshen_targeted_four + 1;
+  let now_target_five = yuanshen_targeted_five + 1;
+  if (star === 5) {
+    if (
+      chizi.star5_up_p &&
+      (yuanshen_targeted_five >= chizi.star5_up_baodi ||
+        Math.random() < chizi.star5_up_p)
+    ) {
+      res = chizi.star5_up;
+      now_target_five = 0;
+    } else {
+      res = chizi.star5;
+    }
+  }
+  if (star === 4) {
+    if (
+      chizi.star4_up_p &&
+      (yuanshen_targeted_four >= chizi.star4_up_baodi ||
+        Math.random() < chizi.star4_up_p)
+    ) {
+      res = chizi.star4_up;
+      now_target_four = 0;
+    } else {
+      res = chizi.star4;
+    }
+  }
+  if (star === 3) res = chizi.star3;
+
   await collection.updateOne({ gid, uid }, {
     $set: {
       yuanshen_last_four: now_last_four,
       yuanshen_last_five: now_last_five,
+      yuanshen_targeted_four: now_target_four,
+      yuanshen_targeted_five: now_target_five,
     },
   }, { upsert: true });
-
-  let res: string[] = [];
-  if (star === 5) res = chizi.star5;
-  if (star === 4) res = chizi.star4;
-  if (star === 3) res = chizi.star3;
 
   return res[Math.floor(Math.random() * res.length)];
 }

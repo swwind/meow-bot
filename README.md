@@ -58,4 +58,5 @@ Make sure deno 1.10.3 installed.
    sudo systemctl enable --now meow-bot.service
    ```
 
-5. In order to make `setu` plugin work, you need to put all your setu into `/root/setu/`.
+5. In order to make `setu` plugin work, you need to put all your setu into
+   `/root/setu/`.
