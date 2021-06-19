@@ -61,7 +61,25 @@ const YuanshenHuodong1: YuanshenChizi = {
   star4_up_baodi: 1,
   star5: "刻晴 莫娜 七七 迪卢克 琴"
     .split(" ").map(appendStar(5)),
-  star5_up: "可莉".split(" ").map(appendStar(4)),
+  star5_up: "可莉".split(" ").map(appendStar(5)),
+  star5_up_p: .5,
+  star5_up_baodi: 1,
+};
+
+const YuanshenHuodong2: YuanshenChizi = {
+  star3: "弹弓 神射手之誓 鸦羽弓 翡玉法球 讨龙英杰谭 魔导绪论 黑缨枪 以理服人 沐浴龙血的剑 铁影阔剑 飞天御剑 黎明神剑 冷刃"
+    .split(" ")
+    .map(appendStar(3)),
+  star4:
+    "烟绯 罗莎莉亚 辛焱 砂糖 迪奥娜 重云 诺艾尔 班尼特 菲谢尔 凝光 行秋 北斗 香菱 雷泽 芭芭拉 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 西风秘典 匣里灭辰 雨裁 祭礼大剑 西风大剑 祭礼剑 笛剑 西风剑"
+      .split(" ")
+      .map(appendStar(4)),
+  star4_up: "幽夜华尔兹 流浪乐章 西风长枪 钟剑 匣里龙吟".split(" ").map(appendStar(4)),
+  star4_up_p: .5,
+  star4_up_baodi: 1,
+  star5: "阿莫斯之弓 天空之翼 天空之卷 和璞鸢 天空之脊 狼的末路 天空之刃 风鹰剑"
+    .split(" ").map(appendStar(5)),
+  star5_up: "四风原典 天空之傲".split(" ").map(appendStar(5)),
   star5_up_p: .5,
   star5_up_baodi: 1,
 };
@@ -87,8 +105,8 @@ async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
   const now_last_five = star >= 5 ? 0 : yuanshen_last_five + 1;
 
   let res: string[] = [];
-  let now_target_four = yuanshen_targeted_four + 1;
-  let now_target_five = yuanshen_targeted_five + 1;
+  let now_target_four = yuanshen_targeted_four;
+  let now_target_five = yuanshen_targeted_five;
   if (star === 5) {
     if (
       chizi.star5_up_p &&
@@ -99,6 +117,7 @@ async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
       now_target_five = 0;
     } else {
       res = chizi.star5;
+      now_target_five = yuanshen_targeted_five + 1;
     }
   }
   if (star === 4) {
@@ -111,6 +130,7 @@ async function yuanshenChouka(chizi: YuanshenChizi, gid: number, uid: number) {
       now_target_four = 0;
     } else {
       res = chizi.star4;
+      now_target_four = yuanshen_targeted_four + 1;
     }
   }
   if (star === 3) res = chizi.star3;
@@ -241,9 +261,13 @@ const Yuanshen: Game = {
     name: "「奔行世间」常驻祈愿",
     chou: yuanshenChouka.bind(null, YuanshenChangzhu),
   }, {
-    type: "活动池",
+    type: "角色池",
     name: "「闪焰的驻足」活动祈愿",
     chou: yuanshenChouka.bind(null, YuanshenHuodong1),
+  }, {
+    type: "武器池",
+    name: "「神铸赋形」活动祈愿",
+    chou: yuanshenChouka.bind(null, YuanshenHuodong2),
   }],
 };
 const Arknights: Game = {

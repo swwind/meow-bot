@@ -146,7 +146,6 @@ function emitFriendMessage(uid: number, message: DeserializedMessage) {
       sendFriendMessage,
       sendGroupMessage,
       reply(text) {
-        console.log(text);
         sendFriendMessage(uid, text);
       },
     };
