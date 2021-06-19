@@ -3,6 +3,7 @@ import { messageText } from "../utils.ts";
 
 const helpText = "来点涩图";
 
+/*
 function fetchSetu(timeout = 10000) {
   return Promise.race([
     new Promise<string>((_, reject) => setTimeout(reject, timeout)),
@@ -19,6 +20,7 @@ function fetchSetu(timeout = 10000) {
     })(),
   ]);
 }
+*/
 
 export const SetuPlugin: IPlugin = {
   name: "setu",
@@ -32,10 +34,19 @@ export const SetuPlugin: IPlugin = {
     const text = messageText(message.messageChain);
     if (text === "来点涩图") {
       try {
-        const url = await fetchSetu();
+        let setus: string[] = [];
+        for await (const entry of Deno.readDir("/root/setu")) {
+          if (entry.isFile && /\.(?:jpe?g|png)$/i.test(entry.name)) {
+            setus.push(entry.name);
+          }
+        }
+        if (!setus.length) {
+          throw new Error();
+        }
+        const setu = setus[Math.floor(Math.random() * setus.length)];
         helper.reply([{
           type: "Image",
-          url,
+          url: `file:///root/setu/${setu}`,
         }]);
       } catch (e) {
         helper.reply("获取涩图失败");
