@@ -1,7 +1,7 @@
 import { DeserializedMessage, IHelperReply, IPlugin } from "../types.ts";
 import { messageText } from "../utils.ts";
 
-function fetchTimeout(url: string, timeout = 5000) {
+function fetchTimeout(url: string | URL, timeout = 5000) {
   return Promise.race([
     new Promise<Response>((_, reject) => setTimeout(reject, timeout)),
     fetch(url),
@@ -18,8 +18,22 @@ async function fetchLovemikuSetu() {
 }
 
 async function fetchLoliconSetu() {
-  const data = await (await fetchTimeout('https://api.lolicon.app/setu/v2')).json();
-  const url = data?.data?.[0]?.urls?.original;
+  const dst = new URL('https://api.lolicon.app/setu/v2');
+  dst.searchParams.append('size', 'regular');
+  const data = await (await fetchTimeout(dst)).json();
+  const url = data?.data?.[0]?.urls?.regular;
+  if (typeof url !== 'string') {
+    throw new Error('Not found');
+  }
+  return url;
+}
+
+async function fetchLoliconTagSetu(tag: string) {
+  const dst = new URL('https://api.lolicon.app/setu/v2');
+  dst.searchParams.append('tag', tag);
+  dst.searchParams.append('size', 'regular');
+  const data = await (await fetchTimeout(dst)).json();
+  const url = data?.data?.[0]?.urls?.regular;
   if (typeof url !== 'string') {
     throw new Error('Not found');
   }
@@ -77,7 +91,7 @@ const setuApis = [{
   fetch: fetchTouhouSetu,
 }];
 
-const helpText = `来点 $type? 涩图\ntype = { ${setuApis.map(({ name }) => name).join(', ')} }`;
+const helpText = `来点 $type? 涩图\ntype = { ${setuApis.map(({ name }) => name).join(', ')} } | <TAG>`;
 
 export const SetuPlugin: IPlugin = {
   name: "setu",
@@ -110,7 +124,15 @@ export const SetuPlugin: IPlugin = {
             return;
           }
         }
-        helper.reply('/help setu');
+        // type is a tag
+        try {
+          helper.reply([{
+            type: 'Image',
+            url: await fetchLoliconTagSetu(type),
+          }]);
+        } catch (e) {
+          helper.reply(`找不到带有标签「${type}」的涩图`);
+        }
       } catch (e) {
         helper.reply(Math.random() < 0.01 ? '别冲了' : '获取失败，可能图源炸了');
       }
