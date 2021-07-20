@@ -19,9 +19,8 @@ async function fetchLovemikuSetu() {
 
 async function fetchLoliconSetu() {
   const dst = new URL('https://api.lolicon.app/setu/v2');
-  dst.searchParams.append('size', 'regular');
   const data = await (await fetchTimeout(dst)).json();
-  const url = data?.data?.[0]?.urls?.regular;
+  const url = data?.data?.[0]?.urls?.original;
   if (typeof url !== 'string') {
     throw new Error('Not found');
   }
@@ -31,9 +30,8 @@ async function fetchLoliconSetu() {
 async function fetchLoliconTagSetu(tag: string) {
   const dst = new URL('https://api.lolicon.app/setu/v2');
   dst.searchParams.append('tag', tag);
-  dst.searchParams.append('size', 'regular');
   const data = await (await fetchTimeout(dst)).json();
-  const url = data?.data?.[0]?.urls?.regular;
+  const url = data?.data?.[0]?.urls?.original;
   if (typeof url !== 'string') {
     throw new Error('Not found');
   }
