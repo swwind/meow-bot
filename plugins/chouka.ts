@@ -53,15 +53,15 @@ const YuanshenHuodong1: YuanshenChizi = {
     .split(" ")
     .map(appendStar(3)),
   star4:
-    "烟绯 辛焱 迪奥娜 重云 诺艾尔 凝光 行秋 北斗 香菱 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑 砂糖 菲谢尔 芭芭拉"
+    "罗莎莉亚 辛焱 砂糖 迪奥娜 诺艾尔 班尼特 菲谢尔 行秋 北斗 香菱 雷泽 芭芭拉 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 流浪乐章 西风秘典 西风长枪 匣里灭辰 雨裁 祭礼大剑 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑 西风剑"
       .split(" ")
       .map(appendStar(4)),
-  star4_up: "罗莎莉亚 班尼特 雷泽".split(" ").map(appendStar(4)),
+  star4_up: "烟绯 重云 凝光".split(" ").map(appendStar(4)),
   star4_up_p: .5,
   star4_up_baodi: 1,
   star5: "刻晴 莫娜 七七 迪卢克 琴"
     .split(" ").map(appendStar(5)),
-  star5_up: "枫原万叶".split(" ").map(appendStar(5)),
+  star5_up: "神里绫华".split(" ").map(appendStar(5)),
   star5_up_p: .5,
   star5_up_baodi: 1,
 };
@@ -71,15 +71,15 @@ const YuanshenHuodong2: YuanshenChizi = {
     .split(" ")
     .map(appendStar(3)),
   star4:
-    "烟绯 罗莎莉亚 辛焱 砂糖 迪奥娜 重云 诺艾尔 班尼特 菲谢尔 凝光 行秋 北斗 香菱 雷泽 芭芭拉 弓藏 祭礼弓 绝弦 西风猎弓 昭心 祭礼残章 西风秘典 雨裁 祭礼大剑 祭礼剑 笛剑 西风剑 流浪乐章 西风长枪 钟剑 匣里龙吟"
+    "烟绯 罗莎莉亚 辛焱 砂糖 迪奥娜 重云 诺艾尔 班尼特 菲谢尔 凝光 行秋 北斗 香菱 雷泽 芭芭拉 弓藏 祭礼弓 西风猎弓 昭心 祭礼残章 流浪乐章 匣里灭辰 雨裁 钟剑 西风大剑 匣里龙吟 祭礼剑 笛剑"
       .split(" ")
       .map(appendStar(4)),
-  star4_up: "暗巷猎手 暗巷的酒与诗 匣里灭辰 西风大剑 暗巷闪光".split(" ").map(appendStar(4)),
-  star4_up_p: .5,
+  star4_up: "绝弦 西风秘典 西风长枪 祭礼大剑 西风剑".split(" ").map(appendStar(4)),
+  star4_up_p: .75,
   star4_up_baodi: 1,
-  star5: "阿莫斯之弓 天空之翼 四风原典 和璞鸢 天空之脊 狼的末路 天空之傲 天空之刃 风鹰剑"
+  star5: "阿莫斯之弓 天空之翼 四风原典 和璞鸢 天空之卷 狼的末路 天空之傲 天空之刃 风鹰剑"
     .split(" ").map(appendStar(5)),
-  star5_up: "天空之卷 苍古自由之誓".split(" ").map(appendStar(5)),
+  star5_up: "天空之脊 雾切之回光".split(" ").map(appendStar(5)),
   star5_up_p: .5,
   star5_up_baodi: 1,
 };
@@ -266,7 +266,7 @@ const Yuanshen: Game = {
     chou: yuanshenChouka.bind(null, YuanshenChangzhu),
   }, {
     type: "角色池",
-    name: "「叶落风随」活动祈愿",
+    name: "「白鹭之庭」活动祈愿",
     chou: yuanshenChouka.bind(null, YuanshenHuodong1),
   }, {
     type: "武器池",
