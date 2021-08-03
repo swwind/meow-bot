@@ -96,7 +96,7 @@ export const SetuPlugin: IPlugin = {
   helpText,
   async onAllMessage(
     helper: IHelperReply,
-    _gid: number,
+    gid: number,
     _uid: number,
     message: DeserializedMessage,
   ) {
@@ -123,13 +123,19 @@ export const SetuPlugin: IPlugin = {
           }
         }
         // type is a tag
-        try {
-          helper.reply([{
-            type: 'Image',
-            url: await fetchLoliconTagSetu(type),
-          }]);
-        } catch (e) {
-          helper.reply(`找不到带有标签「${type}」的涩图`);
+        if (!gid) {
+          // is friend chat
+          try {
+            helper.reply([{
+              type: 'Image',
+              url: await fetchLoliconTagSetu(type),
+            }]);
+          } catch (e) {
+            helper.reply(`找不到带有标签「${type}」的涩图`);
+          }
+        } else {
+          // is group chat
+          helper.reply('按 tag 搜索无法在群组中使用');
         }
       } catch (e) {
         helper.reply(Math.random() < 0.01 ? '别冲了' : '获取失败，可能图源炸了');
