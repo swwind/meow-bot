@@ -21,6 +21,7 @@ import { NotePlugin } from "./plugins/note.ts";
 import { ChoukaPlugin } from "./plugins/chouka.ts";
 import { HashPlugin } from "./plugins/hash.ts";
 import { SetuPlugin } from "./plugins/setu.ts";
+import { MinecraftPlugin } from './plugins/mc.ts';
 
 const pluginList: IPlugin[] = [
   RSSPlugin,
@@ -29,6 +30,7 @@ const pluginList: IPlugin[] = [
   ChoukaPlugin,
   HashPlugin,
   SetuPlugin,
+  MinecraftPlugin,
 ];
 
 const ws = new WebSocket(url);
