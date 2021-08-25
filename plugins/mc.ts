@@ -78,13 +78,13 @@ export const MinecraftPlugin: IPlugin = {
       }
 
       if (arg === "start") {
-        try {
-          if (start_cooldown) {
-            helper.reply("指令冷却中");
-            return;
-          }
+        if (start_cooldown) {
+          helper.reply("指令冷却中");
+          return;
+        }
 
-          start_cooldown = true;
+        start_cooldown = true;
+        try {
           const response = await fetch(MCS.start);
           const data = await response.json();
 
@@ -93,13 +93,13 @@ export const MinecraftPlugin: IPlugin = {
           } else {
             helper.reply(`服务器启动失败：\n${data.error}`);
           }
-
-          setTimeout(() => {
-            start_cooldown = false;
-          }, 600000);
         } catch (e) {
           helper.reply('服务主机已断开连接');
         }
+
+        setTimeout(() => {
+          start_cooldown = false;
+        }, 600000);
         return;
       }
 
