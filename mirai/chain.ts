@@ -50,39 +50,39 @@ export type MessagePlain = {
 export type MessageImage = {
   type: "Image";
   /** 图片的 imageId，群图片与好友图片格式不同。不为空时将忽略 url 属性 */
-  imageId: string;
+  imageId?: string;
   /** 图片的 URL，发送时可作网络图片的链接；接收时为腾讯图片服务器的链接，可用于图片下载 */
-  url: string;
+  url?: string;
   /** 图片的路径，发送本地图片，路径相对于 JVM 工作路径，也可传入绝对路径。 */
-  path: string;
+  path?: string;
   /** 图片的 Base64 编码 */
-  base64: string;
+  base64?: string;
 };
 
 export type MessageFlashImage = {
   type: "FlashImage";
   /** 图片的 imageId，群图片与好友图片格式不同。不为空时将忽略 url 属性 */
-  imageId: string;
+  imageId?: string;
   /** 图片的 URL，发送时可作网络图片的链接；接收时为腾讯图片服务器的链接，可用于图片下载 */
-  url: string;
+  url?: string;
   /** 图片的路径，发送本地图片，路径相对于 JVM 工作路径，也可传入绝对路径。 */
-  path: string;
+  path?: string;
   /** 图片的 Base64 编码 */
-  base64: string;
+  base64?: string;
 };
 
 export type MessageVoice = {
   type: "Voice";
   /** 语音的 voiceId，不为空时将忽略 url 属性 */
-  voiceId: string;
+  voiceId?: string;
   /** 语音的 URL，发送时可作网络语音的链接；接收时为腾讯语音服务器的链接，可用于语音下载 */
-  url: string;
+  url?: string;
   /** 语音的路径，发送本地语音，路径相对于 JVM 工作路径，也可传入绝对路径。 */
-  path: string;
+  path?: string;
   /** 语音的 Base64 编码 */
-  base64: string;
+  base64?: string;
   /** 返回的语音长度, 发送消息时可以不传 */
-  length: number;
+  length?: number;
 };
 
 export type MessageXml = {

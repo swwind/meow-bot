@@ -37,7 +37,8 @@ Make sure deno 1.10.3 installed.
 
    ```bash
    deno bundle --unstable main.ts > main.js
-   scp -i xxx.pem main.js root@xxx.xxx.xxx:/root/main.js
+
+   # than you can copy main.js to your server
    ```
 
 4. On your server, install it to systemd.
@@ -51,12 +52,10 @@ Make sure deno 1.10.3 installed.
    [Service]
    WorkingDirectory=$(pwd)
    ExecStart=$(which deno) run -A --unstable /root/main.js
+   Restart=always
 
    [Install]
    WantedBy=multi-user.target
    " | sudo tee /usr/lib/systemd/system/meow-bot.service
    sudo systemctl enable --now meow-bot.service
    ```
-
-5. In order to make `setu` plugin work, you need to put all your setu into
-   `/root/setu/`.
