@@ -5,7 +5,7 @@ import { cacheMessage, extractText } from "../utils.ts";
 type Note = {
   group: number;
   name: string;
-  content: MessageChain;
+  content: MessageChain[];
 };
 
 const coll = db.collection<Note>("notes");
@@ -23,7 +23,7 @@ await coll.createIndexes({
   ],
 });
 
-async function addNote(group: number, name: string, content: MessageChain) {
+async function addNote(group: number, name: string, content: MessageChain[]) {
   await coll.updateOne({
     group,
     name,
@@ -41,7 +41,7 @@ async function getNote(group: number, name: string) {
     group,
     name,
   });
-  return note ? note.content : null;
+  return note ? note.content : [];
 }
 
 const help = {
@@ -80,7 +80,9 @@ const note: Plugin = (webhook, http) => {
       });
 
       if (result) {
-        await reply(result.content);
+        for (const message of result.content) {
+          await reply(message);
+        }
       }
 
       if (command[0] === "/note") {
@@ -101,9 +103,9 @@ const note: Plugin = (webhook, http) => {
               .messageChain,
           );
 
-          await addNote(event.sender.group.id, name, content);
+          await addNote(event.sender.group.id, name, [content]);
 
-          await reply(`成功添加「${name}」至备忘喵`);
+          await reply(`成功添加至「${name}」备忘喵`);
         } // 追加备忘录，如果不存在就直接创建
         else if (command[1] === "append") {
           const name = command[2].trim();
@@ -115,20 +117,16 @@ const note: Plugin = (webhook, http) => {
             return await reply(help.append);
           }
 
-          let content = await cacheMessage(
+          const content = await getNote(event.sender.group.id, name);
+          content.push(await cacheMessage(
             (await http.messageFromId(quote[0].id))
               .data
               .messageChain,
-          );
-
-          const oldContent = await getNote(event.sender.group.id, name);
-          if (oldContent) {
-            content = [...oldContent, ...content];
-          }
+          ));
 
           await addNote(event.sender.group.id, name, content);
 
-          await reply(`成功追加「${name}」至备忘喵`);
+          await reply(`成功追加至「${name}」备忘喵`);
         } // 列举备忘录
         else if (command[1] === "list") {
           const notes = await coll.find({
