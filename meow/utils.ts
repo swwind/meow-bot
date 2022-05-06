@@ -1,4 +1,10 @@
-import { MessageChain, MessageChainItem, MessagePlain } from "../mod.ts";
+import {
+  MessageChain,
+  MessageChainItem,
+  MessagePlain,
+  MessageQuote,
+  MessageSource,
+} from "../mod.ts";
 
 await Deno.mkdir("cache", { recursive: true });
 
@@ -54,4 +60,14 @@ export function extractText(messageChain: MessageChain) {
     .map((msg) => msg.text)
     .join(" ")
     .trim();
+}
+
+export function extractSource(messageChain: MessageChain) {
+  return messageChain
+    .find((msg): msg is MessageSource => msg.type === "Source");
+}
+
+export function extractQuote(messageChain: MessageChain) {
+  return messageChain
+    .find((msg): msg is MessageQuote => msg.type === "Quote");
 }

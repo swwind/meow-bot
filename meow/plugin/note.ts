@@ -118,11 +118,13 @@ const note: Plugin = (webhook, http) => {
           }
 
           const content = await getNote(event.sender.group.id, name);
-          content.push(await cacheMessage(
-            (await http.messageFromId(quote[0].id))
-              .data
-              .messageChain,
-          ));
+          content.push(
+            await cacheMessage(
+              (await http.messageFromId(quote[0].id))
+                .data
+                .messageChain,
+            ),
+          );
 
           await addNote(event.sender.group.id, name, content);
 
