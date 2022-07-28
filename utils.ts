@@ -13,7 +13,7 @@ async function saveFile(filename: string, url: string) {
 
   await Deno.writeFile(
     `cache/${filename}`,
-    new Uint8Array(await response.arrayBuffer())
+    new Uint8Array(await response.arrayBuffer()),
   );
 }
 
@@ -32,7 +32,7 @@ async function cacheFile(filename: string, url: string) {
 }
 
 export async function cacheMessage(
-  messageChain: MessageChain
+  messageChain: MessageChain,
 ): Promise<MessageChain> {
   return (
     await Promise.all(
@@ -45,13 +45,13 @@ export async function cacheMessage(
           return {
             type: "Image",
             path: await Deno.realPath(
-              await cacheFile(message.imageId!, message.url!)
+              await cacheFile(message.imageId!, message.url!),
             ),
           };
         }
 
         return message;
-      })
+      }),
     )
   ).filter((message): message is MessageChainItem => message !== null);
 }
@@ -66,7 +66,7 @@ export function extractText(messageChain: MessageChain) {
 
 export function extractSource(messageChain: MessageChain) {
   return messageChain.find(
-    (msg): msg is MessageSource => msg.type === "Source"
+    (msg): msg is MessageSource => msg.type === "Source",
   );
 }
 

@@ -27,7 +27,7 @@ async function addNote(group: number, name: string, content: MessageChain[]) {
   await coll.updateOne(
     { group, name },
     { $set: { content } },
-    { upsert: true }
+    { upsert: true },
   );
 }
 
@@ -60,15 +60,14 @@ export default (webhook: Webhook, mirai: Mirai) => {
       const reply = (message: string | MessageChain) =>
         mirai.sendGroupMessage({
           target: event.sender.group.id,
-          messageChain:
-            typeof message === "string"
-              ? [
-                  {
-                    type: "Plain",
-                    text: message,
-                  },
-                ]
-              : message,
+          messageChain: typeof message === "string"
+            ? [
+              {
+                type: "Plain",
+                text: message,
+              },
+            ]
+            : message,
         });
 
       const result = await coll.findOne({
@@ -87,7 +86,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
         if (command[1] === "add") {
           const name = command[2].trim();
           const quote = event.messageChain.filter(
-            (msg): msg is MessageQuote => msg.type === "Quote"
+            (msg): msg is MessageQuote => msg.type === "Quote",
           );
 
           if (!name || !quote.length) {
@@ -97,7 +96,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
           const content = await cacheMessage(
             (
               await mirai.messageFromId(quote[0].id)
-            ).data.messageChain
+            ).data.messageChain,
           );
 
           await addNote(event.sender.group.id, name, [content]);
@@ -107,7 +106,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
         else if (command[1] === "append") {
           const name = command[2].trim();
           const quote = event.messageChain.filter(
-            (msg): msg is MessageQuote => msg.type === "Quote"
+            (msg): msg is MessageQuote => msg.type === "Quote",
           );
 
           if (!name || !quote.length) {
@@ -119,8 +118,8 @@ export default (webhook: Webhook, mirai: Mirai) => {
             await cacheMessage(
               (
                 await mirai.messageFromId(quote[0].id)
-              ).data.messageChain
-            )
+              ).data.messageChain,
+            ),
           );
 
           await addNote(event.sender.group.id, name, content);
@@ -137,7 +136,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
           await reply(
             notes.length
               ? `找到以下备忘喵：\n${notes.map((note) => note.name).join("\n")}`
-              : "本群还没有备忘喵"
+              : "本群还没有备忘喵",
           );
         } // 删除备忘
         else if (command[1] === "delete") {
@@ -153,7 +152,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
           });
 
           await reply(
-            success > 0 ? `成功删除了「${name}」喵` : `「${name}」不存在喵`
+            success > 0 ? `成功删除了「${name}」喵` : `「${name}」不存在喵`,
           );
         } // 返回帮助
         else {

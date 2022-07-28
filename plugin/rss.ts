@@ -34,7 +34,7 @@ async function addSource(group: number, title: string, url: string) {
   await collSource.updateOne(
     { group, url },
     { $set: { title } },
-    { upsert: true }
+    { upsert: true },
   );
 
   return { group, title, url };
@@ -69,7 +69,7 @@ async function updateSource(source: RSSSource) {
         await collRecord.insertOne(record);
 
         return record;
-      })
+      }),
     )
   ).filter((record): record is RSSRecord => record !== null);
 }
@@ -97,9 +97,9 @@ export default (webhook: Webhook, mirai: Mirai) => {
   webhook
     .pipe((event) =>
       event.type === "GroupMessage" ||
-      event.type === "GroupSyncMessage" ||
-      event.type === "TempMessage" ||
-      event.type === "TempSyncMessage"
+        event.type === "GroupSyncMessage" ||
+        event.type === "TempMessage" ||
+        event.type === "TempSyncMessage"
         ? [event]
         : null
     )
@@ -110,10 +110,9 @@ export default (webhook: Webhook, mirai: Mirai) => {
       const reply = (message: string | MessageChain) =>
         mirai.sendGroupMessage({
           target: event.sender.group.id,
-          messageChain:
-            typeof message === "string"
-              ? [{ type: "Plain", text: message }]
-              : message,
+          messageChain: typeof message === "string"
+            ? [{ type: "Plain", text: message }]
+            : message,
         });
 
       if (command[0] === "/rss") {
@@ -143,10 +142,12 @@ export default (webhook: Webhook, mirai: Mirai) => {
           const sources = await listSource(event.sender.group.id);
           await reply(
             sources.length
-              ? `本群的所有订阅喵：\n${sources
+              ? `本群的所有订阅喵：\n${
+                sources
                   .map((source, index) => `[${index}] ${source.title}`)
-                  .join("\n")}`
-              : "本群还没有订阅喵"
+                  .join("\n")
+              }`
+              : "本群还没有订阅喵",
           );
         } else if (command[1] === "delete") {
           const index = parseInt(command[2]);
@@ -165,10 +166,10 @@ export default (webhook: Webhook, mirai: Mirai) => {
             result.map(async (r, i) => {
               if (r.status === "fulfilled") {
                 await Promise.allSettled(
-                  r.value.map((record) => pushUpdate(sources[i], record))
+                  r.value.map((record) => pushUpdate(sources[i], record)),
                 );
               }
-            })
+            }),
           );
 
           const newcount = result
@@ -186,7 +187,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
               failcount ? `有 ${failcount} 个订阅源更新失败` : "",
             ]
               .join("\n")
-              .trim()
+              .trim(),
           );
         } else {
           await reply(`RSS 订阅帮助喵\n${Object.values(help).join("\n")}`);

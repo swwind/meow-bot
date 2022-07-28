@@ -1,4 +1,4 @@
-import { Webhook, Mirai, MessageApp } from "../deps.ts";
+import { MessageApp, Mirai, Webhook } from "../deps.ts";
 
 export default (webhook: Webhook, mirai: Mirai) => {
   webhook
@@ -9,7 +9,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
     )
     .attach((event) => {
       const message = event.messageChain.find(
-        (message): message is MessageApp => message.type === "App"
+        (message): message is MessageApp => message.type === "App",
       );
 
       if (message) {
