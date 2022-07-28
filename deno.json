@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "build": "deno bundle main.ts > main.js",
+    "deploy": "scp main.js root@s.swwind.me:/root/meow/main.js"
+  }
+}

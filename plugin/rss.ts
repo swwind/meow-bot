@@ -1,6 +1,5 @@
-import { MessageChain, Plugin } from "../../mod.ts";
 import { db } from "../db.ts";
-import { parseFeed } from "../deps.ts";
+import { MessageChain, Mirai, parseFeed, Webhook } from "../deps.ts";
 import { extractText } from "../utils.ts";
 
 type RSSRecord = {
@@ -19,46 +18,34 @@ const collRecord = db.collection<RSSRecord>("rss/record");
 const collSource = db.collection<RSSSource>("rss/source");
 
 await collSource.createIndexes({
-  indexes: [{
-    key: {
-      group: 1,
-      url: 1,
+  indexes: [
+    {
+      key: {
+        group: 1,
+        url: 1,
+      },
+      name: "key",
+      unique: true,
     },
-    name: "key",
-    unique: true,
-  }],
+  ],
 });
 
 async function addSource(group: number, title: string, url: string) {
-  await collSource.updateOne({
-    group,
-    url,
-  }, {
-    $set: {
-      title,
-    },
-  }, {
-    upsert: true,
-  });
+  await collSource.updateOne(
+    { group, url },
+    { $set: { title } },
+    { upsert: true }
+  );
 
-  return {
-    group,
-    title,
-    url,
-  };
+  return { group, title, url };
 }
 
 function listSource(group: number) {
-  return collSource.find({
-    group,
-  }).toArray();
+  return collSource.find({ group }).toArray();
 }
 
 function removeSource(group: number, url: string) {
-  return collSource.deleteOne({
-    group,
-    url,
-  });
+  return collSource.deleteOne({ group, url });
 }
 
 async function updateSource(source: RSSSource) {
@@ -66,22 +53,25 @@ async function updateSource(source: RSSSource) {
   const xml = await response.text();
   const feed = await parseFeed(xml);
 
-  return (await Promise.all(feed.entries.map(async (item) => {
-    const record: RSSRecord = {
-      group: source.group,
-      title: item.title?.value ?? "[no title]",
-      url: item.links.map((link) => link.href).join("\n"),
-    };
+  return (
+    await Promise.all(
+      feed.entries.map(async (item) => {
+        const record: RSSRecord = {
+          group: source.group,
+          title: item.title?.value ?? "[no title]",
+          url: item.links.map((link) => link.href).join("\n"),
+        };
 
-    if (await collRecord.findOne(record)) {
-      return null;
-    }
+        if (await collRecord.findOne(record)) {
+          return null;
+        }
 
-    await collRecord.insertOne(record);
+        await collRecord.insertOne(record);
 
-    return record;
-  })))
-    .filter((record): record is RSSRecord => record !== null);
+        return record;
+      })
+    )
+  ).filter((record): record is RSSRecord => record !== null);
 }
 
 const help = {
@@ -91,36 +81,39 @@ const help = {
   update: "/rss update",
 };
 
-const rss: Plugin = (webhook, http) => {
+export default (webhook: Webhook, mirai: Mirai) => {
   function pushUpdate(source: RSSSource, record: RSSRecord) {
-    return http.sendGroupMessage({
+    return mirai.sendGroupMessage({
       target: source.group,
-      messageChain: [{
-        type: "Plain",
-        text: `${source.title} 更新了 ${record.title}\n${record.url}`,
-      }],
+      messageChain: [
+        {
+          type: "Plain",
+          text: `${source.title} 更新了 ${record.title}\n${record.url}`,
+        },
+      ],
     });
   }
 
-  webhook.pipe((event) =>
-    event.type === "GroupMessage" || event.type === "GroupSyncMessage" ||
-      event.type === "TempMessage" || event.type === "TempSyncMessage"
-      ? [event]
-      : null
-  )
+  webhook
+    .pipe((event) =>
+      event.type === "GroupMessage" ||
+      event.type === "GroupSyncMessage" ||
+      event.type === "TempMessage" ||
+      event.type === "TempSyncMessage"
+        ? [event]
+        : null
+    )
     .attach(async (event) => {
       const message = extractText(event.messageChain);
       const command = message.split(" ").filter((s) => s !== "");
 
       const reply = (message: string | MessageChain) =>
-        http.sendGroupMessage({
+        mirai.sendGroupMessage({
           target: event.sender.group.id,
-          messageChain: typeof message === "string"
-            ? [{
-              type: "Plain",
-              text: message,
-            }]
-            : message,
+          messageChain:
+            typeof message === "string"
+              ? [{ type: "Plain", text: message }]
+              : message,
         });
 
       if (command[0] === "/rss") {
@@ -150,11 +143,10 @@ const rss: Plugin = (webhook, http) => {
           const sources = await listSource(event.sender.group.id);
           await reply(
             sources.length
-              ? `本群的所有订阅喵：\n${
-                sources.map((source, index) => `[${index}] ${source.title}`)
-                  .join("\n")
-              }`
-              : "本群还没有订阅喵",
+              ? `本群的所有订阅喵：\n${sources
+                  .map((source, index) => `[${index}] ${source.title}`)
+                  .join("\n")}`
+              : "本群还没有订阅喵"
           );
         } else if (command[1] === "delete") {
           const index = parseInt(command[2]);
@@ -169,21 +161,22 @@ const rss: Plugin = (webhook, http) => {
 
           const result = await Promise.allSettled(sources.map(updateSource));
 
-          await Promise.allSettled(result
-            .map(async (r, i) => {
+          await Promise.allSettled(
+            result.map(async (r, i) => {
               if (r.status === "fulfilled") {
                 await Promise.allSettled(
-                  r.value.map((record) => pushUpdate(sources[i], record)),
+                  r.value.map((record) => pushUpdate(sources[i], record))
                 );
               }
-            }));
+            })
+          );
 
           const newcount = result
-            .map((r) => r.status === "fulfilled" ? r.value.length : 0)
+            .map((r) => (r.status === "fulfilled" ? r.value.length : 0))
             .reduce((a, b) => a + b, 0);
 
           const failcount = result
-            .map((r) => r.status === "rejected" ? 1 : 0)
+            .map((r) => (r.status === "rejected" ? 1 : 0))
             .reduce((a, b) => a + b, 0 as number);
 
           await reply(
@@ -191,7 +184,9 @@ const rss: Plugin = (webhook, http) => {
               "更新成功喵",
               newcount ? `共 ${newcount} 条新消息` : "没有新消息喵",
               failcount ? `有 ${failcount} 个订阅源更新失败` : "",
-            ].join("\n").trim(),
+            ]
+              .join("\n")
+              .trim()
           );
         } else {
           await reply(`RSS 订阅帮助喵\n${Object.values(help).join("\n")}`);
@@ -200,8 +195,7 @@ const rss: Plugin = (webhook, http) => {
     });
 
   setInterval(async () => {
-    const sources = await collSource.find({})
-      .toArray();
+    const sources = await collSource.find({}).toArray();
 
     for (const source of sources) {
       try {
@@ -213,5 +207,3 @@ const rss: Plugin = (webhook, http) => {
     }
   }, 1000 * 60 * 10);
 };
-
-export default rss;

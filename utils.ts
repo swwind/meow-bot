@@ -4,7 +4,7 @@ import {
   MessagePlain,
   MessageQuote,
   MessageSource,
-} from "../mod.ts";
+} from "./deps.ts";
 
 await Deno.mkdir("cache", { recursive: true });
 
@@ -13,7 +13,7 @@ async function saveFile(filename: string, url: string) {
 
   await Deno.writeFile(
     `cache/${filename}`,
-    new Uint8Array(await response.arrayBuffer()),
+    new Uint8Array(await response.arrayBuffer())
   );
 }
 
@@ -32,26 +32,28 @@ async function cacheFile(filename: string, url: string) {
 }
 
 export async function cacheMessage(
-  messageChain: MessageChain,
+  messageChain: MessageChain
 ): Promise<MessageChain> {
-  return (await Promise.all(messageChain
-    .map(async (message): Promise<MessageChainItem | null> => {
-      if (message.type === "Source") {
-        return null;
-      }
+  return (
+    await Promise.all(
+      messageChain.map(async (message): Promise<MessageChainItem | null> => {
+        if (message.type === "Source") {
+          return null;
+        }
 
-      if (message.type === "Image" || message.type === "FlashImage") {
-        return {
-          type: "Image",
-          path: await Deno.realPath(
-            await cacheFile(message.imageId!, message.url!),
-          ),
-        };
-      }
+        if (message.type === "Image" || message.type === "FlashImage") {
+          return {
+            type: "Image",
+            path: await Deno.realPath(
+              await cacheFile(message.imageId!, message.url!)
+            ),
+          };
+        }
 
-      return message;
-    })))
-    .filter((message): message is MessageChainItem => message !== null);
+        return message;
+      })
+    )
+  ).filter((message): message is MessageChainItem => message !== null);
 }
 
 export function extractText(messageChain: MessageChain) {
@@ -63,11 +65,11 @@ export function extractText(messageChain: MessageChain) {
 }
 
 export function extractSource(messageChain: MessageChain) {
-  return messageChain
-    .find((msg): msg is MessageSource => msg.type === "Source");
+  return messageChain.find(
+    (msg): msg is MessageSource => msg.type === "Source"
+  );
 }
 
 export function extractQuote(messageChain: MessageChain) {
-  return messageChain
-    .find((msg): msg is MessageQuote => msg.type === "Quote");
+  return messageChain.find((msg): msg is MessageQuote => msg.type === "Quote");
 }
