@@ -14,7 +14,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
 
       if (message) {
         const content = JSON.parse(message.content);
-        if (content?.meta?.detail_1?.title === "1109937557") {
+        if (content?.meta?.detail_1?.appid === "1109937557") {
           const url = content?.meta?.detail_1?.qqdocurl;
           if (typeof url === "string") {
             const index = url.indexOf("?");
