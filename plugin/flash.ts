@@ -7,10 +7,7 @@ import { cacheMessage } from "../utils.ts";
 export default (webhook: Webhook, mirai: Mirai) => {
   webhook
     .pipe((event) =>
-      event.type === "GroupMessage" ||
-        event.type === "GroupSyncMessage" ||
-        event.type === "TempMessage" ||
-        event.type === "TempSyncMessage"
+      event.type === "GroupMessage" || event.type === "GroupSyncMessage"
         ? [event]
         : null
     )

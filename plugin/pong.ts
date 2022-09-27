@@ -5,9 +5,9 @@ export default (webhook: Webhook, mirai: Mirai) => {
   webhook
     .pipe((event) =>
       event.type === "FriendMessage" ||
-        event.type === "FriendSyncMessage" ||
-        event.type === "StrangeMessage" ||
-        event.type === "StrangeSyncMessage"
+      event.type === "FriendSyncMessage" ||
+      event.type === "StrangeMessage" ||
+      event.type === "StrangeSyncMessage"
         ? [event]
         : null
     )
@@ -29,10 +29,7 @@ export default (webhook: Webhook, mirai: Mirai) => {
 
   webhook
     .pipe((event) =>
-      event.type === "GroupMessage" ||
-        event.type === "GroupSyncMessage" ||
-        event.type === "TempMessage" ||
-        event.type === "TempSyncMessage"
+      event.type === "GroupMessage" || event.type === "GroupSyncMessage"
         ? [event]
         : null
     )
